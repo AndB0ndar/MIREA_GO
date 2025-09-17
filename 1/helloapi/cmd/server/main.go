@@ -2,9 +2,11 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -12,6 +14,11 @@ import (
 type user struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
+}
+
+type health struct {
+	Status string `json:"status"`
+	Time   string `json:"time"`
 }
 
 func main() {
@@ -23,7 +30,7 @@ func main() {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/hello", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Hello, world!"))
+		fmt.Fprintln(w, "Hello, world!")
 	})
 
 	mux.HandleFunc("/user", func(w http.ResponseWriter, r *http.Request) {
@@ -31,6 +38,14 @@ func main() {
 		json.NewEncoder(w).Encode(user{
 			ID:   uuid.NewString(),
 			Name: "Gopher",
+		})
+	})
+
+	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(health{
+			Status: "ok",
+			Time:   time.Now().Format(time.RFC3339),
 		})
 	})
 
