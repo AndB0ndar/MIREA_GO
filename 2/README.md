@@ -256,7 +256,7 @@ func Run() {
 
 Перепроверим работоспособность:
 
-![build](img/Screenshot from 2025-09-16 19-14-04.png)
+![run-handler](img/Screenshot from 2025-09-16 19-14-04.png)
 
 
 ## Структура проекта
