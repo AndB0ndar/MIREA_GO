@@ -111,7 +111,7 @@ curl http://localhost:8081/<текст>
 curl http://localhost:8081/ping
 ```
 
-![run](img/Screenshot from 2025-09-17 12-10-20.png)
+![run](2/img/Screenshot from 2025-09-17 12-10-20.png)
 
 ## Сборка бинарника
 
@@ -120,7 +120,7 @@ go build -o bin/myapp ./cmd/server
 ./helloapi
 ```
 
-![build](img/Screenshot from 2025-09-17 12-15-46.png)
+![build](2/img/Screenshot from 2025-09-17 12-15-46.png)
 
 Заметим, что ответы `curl` совпадают с предыдущим шагом.
 
@@ -165,7 +165,7 @@ func Run() {
 }
 ```
 
-![x-request-id](img/Screenshot from 2025-09-17 12-33-28.png)
+![x-request-id](2/img/Screenshot from 2025-09-17 12-33-28.png)
 
 ### Упражнение B (JSON ошибки)
 
@@ -199,7 +199,7 @@ mux.HandleFunc("/fail", func(w http.ResponseWriter, r *http.Request) {
 })
 ```
 
-![fail](img/Screenshot from 2025-09-17 12-35-06.png)
+![fail](2/img/Screenshot from 2025-09-17 12-35-06.png)
 
 ## Упражнение C (Разделение обработчиков)
 
@@ -256,7 +256,7 @@ func Run() {
 
 Перепроверим работоспособность:
 
-![run-handler](img/Screenshot from 2025-09-16 19-14-04.png)
+![run-handler](2/img/Screenshot from 2025-09-16 19-14-04.png)
 
 
 ## Структура проекта
