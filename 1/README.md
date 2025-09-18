@@ -15,7 +15,7 @@ sudo apt update
 sudo apt install golang-go git -y
 ```
 
-![install-go](img/Screenshot from 2025-09-16 18-09-14.png)
+![install-go](img/install-go.png)
 
 ## Проверка версий
 
