@@ -44,6 +44,7 @@ go mod init example.com/helloapi
 Создали файл cmd/server/main.go.
 
 ```go
+package main
 import (
     "encoding/json"
     "fmt"
