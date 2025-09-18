@@ -24,7 +24,7 @@ go version
 git --version
 ```
 
-![versions](img/Screenshot from 2025-09-16 18-10-39.png)
+![versions](img/versions.png)
 
 ## Создание структуры проекта
 
@@ -45,37 +45,37 @@ go mod init example.com/helloapi
 
 ```go
 import (
-	"encoding/json"
-	"fmt"
-	"log"
-	"net/http"
+    "encoding/json"
+    "fmt"
+    "log"
+    "net/http"
 )
 type user struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+    ID   string `json:"id"`
+    Name string `json:"name"`
 }
 func main() {
-	mux := http.NewServeMux()
-	// Текстовый ответ
-	mux.HandleFunc("/hello", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, "Hello, world!")
-	})
-	// Пока временный JSON (без UUID — добавим на шаге 4)
-	mux.HandleFunc("/user", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(user{ID: "temp", Name: "Gopher"})
-	})
-	addr := ":8081"
-	log.Printf("Starting on %s ...", addr)
-	log.Fatal(http.ListenAndServe(addr, mux))
+    mux := http.NewServeMux()
+    // Текстовый ответ
+    mux.HandleFunc("/hello", func(w http.ResponseWriter, r *http.Request) {
+        fmt.Fprintln(w, "Hello, world!")
+    })
+    // Пока временный JSON (без UUID — добавим на шаге 4)
+    mux.HandleFunc("/user", func(w http.ResponseWriter, r *http.Request) {
+        w.Header().Set("Content-Type", "application/json")
+        _ = json.NewEncoder(w).Encode(user{ID: "temp", Name: "Gopher"})
+    })
+    addr := ":8081"
+    log.Printf("Starting on %s ...", addr)
+    log.Fatal(http.ListenAndServe(addr, mux))
 }
 ```
 
 **Пояснения**:
+
 - `http.NewServeMux()` - простой роутер из стандартной библиотеки.
 - Для JSON всегда выставляем заголовок `Content-Type: application/json`.
 - Используется порт 8081, так как стандартный 8080 был занят в системе.
-
 
 ## Установка зависимостей
 
@@ -92,11 +92,11 @@ go mod tidy
 import "github.com/google/uuid"
 // ...
 mux.HandleFunc("/user", func(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(user{
-		ID:   uuid.NewString(), // теперь реальный UUID
-		Name: "Gopher",
-	})
+    w.Header().Set("Content-Type", "application/json")
+    _ = json.NewEncoder(w).Encode(user{
+        ID:   uuid.NewString(), // теперь реальный UUID
+        Name: "Gopher",
+    })
 })
 ```
 
@@ -109,6 +109,7 @@ mux.HandleFunc("/user", func(w http.ResponseWriter, r *http.Request) {
 cd ~/helloapi
 go run ./cmd/server
 ```
+
 Проверка запущенного API (в другом терминале):
 
 ```bash
@@ -116,8 +117,7 @@ curl http://localhost:8081/hello
 curl http://localhost:8081/user
 ```
 
-![run](img/Screenshot from 2025-09-16 18-15-27.png)
-
+![run](img/run.png)
 
 ## Сборка бинарника
 
@@ -126,10 +126,9 @@ go build -o helloapi ./cmd/server
 ./helloapi
 ```
 
-![build](img/Screenshot from 2025-09-16 18-16-03.png)
+![build](img/build.png)
 
 Заметим, что ответы `curl` совпадают с предыдущим шагом.
-
 
 ## Проверка код-стайла
 
@@ -138,15 +137,16 @@ go fmt ./...
 go vet ./...
 ```
 
-![fmt-vet](img/Screenshot from 2025-09-16 18-16-33.png)
+![fmt-vet](img/fmt-vet.png)
 
 ## Настройка порта через переменные окружения
 
 Обновим код сервера. Добавим:
+
 ```go
 import (
-	// ...
-	"os"
+    // ...
+    "os"
 )
 func main() {
     port := os.Getenv("APP_PORT")
@@ -154,18 +154,19 @@ func main() {
         port = "8081"
     }
     // ...
-	addr := ":" + port
-	log.Printf("Starting on %s ...", addr)
-	log.Fatal(http.ListenAndServe(addr, mux))
+    addr := ":" + port
+    log.Printf("Starting on %s ...", addr)
+    log.Fatal(http.ListenAndServe(addr, mux))
 }
 ```
 
 Теперь можно запустить на другом порту, используюя переменную окружения:
+
 ```bash
 APP_PORT=9090 go run ./cmd/server
 ```
 
-![app-port](img/Screenshot from 2025-09-16 18-17-17.png)
+![app-port](img/app-port.png)
 
 ## Добавление ручки `/health`
 
@@ -173,22 +174,22 @@ APP_PORT=9090 go run ./cmd/server
 
 ```go
 import (
-	// ...
-	"time"
+    // ...
+    "time"
 )
 func main() {
     // ...
-	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(health{
-			Status:	"ok",
-			Time:	time.Now().Format(time.RFC3339),
-		})
-	})
+    mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+        w.Header().Set("Content-Type", "application/json")
+        json.NewEncoder(w).Encode(health{
+            Status:    "ok",
+            Time:    time.Now().Format(time.RFC3339),
+        })
+    })
 }
 ```
 
-![health](img/Screenshot from 2025-09-17 11-18-35.png)
+![health](img/health.png)
 
 ## Остальное
 
