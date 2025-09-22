@@ -20,7 +20,7 @@ cd ~/myapp
 ### Инициализация модуля
 
 ```bash
-go mod init example.com/myapp
+go mod init myapp
 ```
 
 ### Создание файлов проекта
@@ -34,7 +34,6 @@ go mod init example.com/myapp
 Содержание cmd/myapp/main.go:
 
 ```go
-cmd/myapp/main.go
 package main
 import "myapp/internal/app"
 func main() {
