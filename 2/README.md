@@ -117,7 +117,7 @@ curl http://localhost:8081/ping
 ## Сборка бинарника
 
 ```bash
-go build -o bin/myapp ./cmd/server
+go build -o bin/myapp ./cmd/myapp
 ./helloapi
 ```
 
