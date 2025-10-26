@@ -116,12 +116,16 @@ host=localhost user=postgres password=your_password dbname=go_6 port=5432 sslmod
 curl http://localhost:8081/health
 ```
 
+![health](img/health.png)
+
 ### Создание пользователя
 ```bash
 curl -X POST http://localhost:8081/users \
   -H "Content-Type: application/json" \
   -d '{"name":"Alice","email":"alice@example.com"}'
 ```
+
+![user](img/user.png)
 
 ### Создание заметки с тегами
 ```bash
@@ -130,10 +134,14 @@ curl -X POST http://localhost:8081/notes \
   -d '{"title":"Первая заметка","content":"Текст заметки...","userId":1,"tags":["go","gorm"]}'
 ```
 
+![notes](img/notes.png)
+
 ### Получение заметки
 ```bash
 curl http://localhost:8081/notes/1
 ```
+
+![note](img/note.png)
 
 ## Особенности реализации
 
