@@ -14,7 +14,7 @@
 ## Инициализация проекта
 
 ```bash
-mkdir -p app/cmd/server app/internal/db app/internal/repository
+mkdir -p app/cmd/server app/internal/{db,repository}
 cd app
 go mod init app
 go get github.com/jackc/pgx/v5 v5.5.0
