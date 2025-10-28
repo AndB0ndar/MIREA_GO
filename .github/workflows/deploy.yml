@@ -55,13 +55,17 @@ jobs:
         fi
         
         if [ -n "$changed_dirs" ]; then
-          echo "changed_dirs=$(echo $changed_dirs | tr ' ' ',')" >> $GITHUB_OUTPUT
+          changed_dirs="${changed_dirs%,}"
+          changed_dirs="[$changed_dirs]"
+          echo "changed_dirs=$changed_dirs" >> $GITHUB_OUTPUT
           echo "Changed directories: $changed_dirs"
+        else
+          echo "changed_dirs=[]" >> $GITHUB_OUTPUT
         fi
 
   deploy:
     needs: detect-changes
-    if: needs.detect-changes.outputs.changed_dirs != ''
+    if: needs.detect-changes.outputs.changed_dirs != '[]'
     runs-on: ubuntu-latest
     strategy:
       matrix:

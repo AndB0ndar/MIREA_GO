@@ -81,7 +81,6 @@ func main() {
         fmt.Fprintf(w, "DELETE endpoint would remove key: %s", key)
     })
 
-
     _ = godotenv.Load()
 
     port := os.Getenv("PORT")
