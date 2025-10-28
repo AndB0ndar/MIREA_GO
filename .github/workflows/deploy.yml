@@ -1,0 +1,180 @@
+name: Build and Deploy Go Projects
+
+on:
+  push:
+    paths:
+      - '1/**'
+      - '2/**'
+      - '3/**'
+      - '4/**'
+      - '5/**'
+      - '6/**'
+      - '7/**'
+      - '8/**'
+      - '9/**'
+      - '*/**'
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      changed_dirs: ${{ steps.detect.outputs.changed_dirs }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 2
+
+    - name: Detect changed directories
+      id: detect
+      run: |
+        changed_dirs=""
+        
+        # Get all changed files
+        if [ "${{ github.event.before }}" = "0000000000000000000000000000000000000000" ]; then
+          # Initial commit - check all directories
+          for dir in [0-9]*/; do
+            if [ -d "$dir" ] && [ -f "$dir/go.mod" ]; then
+              dir_name=${dir%/}
+              changed_dirs="$changed_dirs $dir_name"
+            fi
+          done
+        else
+          # Compare with previous commit
+          changed_files=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
+          
+          # Extract unique directory names
+          for file in $changed_files; do
+            dir=$(echo "$file" | cut -d'/' -f1)
+            if [[ $dir =~ ^[0-9]+$ ]] && [ -d "$dir" ] && [ -f "$dir/go.mod" ]; then
+              if [[ ! " $changed_dirs " =~ " $dir " ]]; then
+                changed_dirs="$changed_dirs $dir"
+              fi
+            fi
+          done
+        fi
+        
+        if [ -n "$changed_dirs" ]; then
+          echo "changed_dirs=$(echo $changed_dirs | tr ' ' ',')" >> $GITHUB_OUTPUT
+          echo "Changed directories: $changed_dirs"
+        fi
+
+  deploy:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.changed_dirs != ''
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        dir: ${{ fromJson(needs.detect-changes.outputs.changed_dirs) }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+
+    - name: Build Go project
+      run: |
+        cd ${{ matrix.dir }}/app
+        echo "Building project in ${{ matrix.dir }}/app"
+        go mod tidy
+        go build -o app-${{ matrix.dir }} ./cmd/server
+        ls -la
+
+    - name: Create deployment package
+      run: |
+        mkdir -p deploy-${{ matrix.dir }}
+
+        cp ${{ matrix.dir }}/app/app-${{ matrix.dir }} deploy-${{ matrix.dir }}/
+        
+        # Copy configuration files if they exist
+        if [ -f "${{ matrix.dir }}/.env" ]; then
+          cp ${{ matrix.dir }}/.env deploy-${{ matrix.dir }}/
+        fi
+        if [ -f "${{ matrix.dir }}/config.yaml" ]; then
+          cp ${{ matrix.dir }}/config.yaml deploy-${{ matrix.dir }}/
+        fi
+        if [ -f "${{ matrix.dir }}/config.json" ]; then
+          cp ${{ matrix.dir }}/config.json deploy-${{ matrix.dir }}/
+        fi
+        
+        echo "Deployment package contents:"
+        ls -la deploy-${{ matrix.dir }}/
+
+    - name: Copy files to server
+      uses: appleboy/scp-action@v0.1.3
+      with:
+        host: ${{ secrets.REMOTE_HOST }}
+        username: ${{ secrets.REMOTE_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        source: "deploy-${{ matrix.dir }}/*"
+        target: "${{ secrets.REMOTE_PATH }}/${{ matrix.dir }}/"
+        strip_components: 1
+
+    - name: Deploy and run with nohup
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.REMOTE_HOST }}
+        username: ${{ secrets.REMOTE_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+          cd ${{ secrets.REMOTE_PATH }}/${{ matrix.dir }}
+          
+          # Stop existing process if running
+          if pgrep -f "app-${{ matrix.dir }}"; then
+            echo "Stopping existing process..."
+            pkill -f "app-${{ matrix.dir }}"
+            sleep 2
+          fi
+          
+          # Make binary executable
+          chmod +x app-${{ matrix.dir }}
+          
+          # Start with nohup
+          echo "Starting application with nohup..."
+          nohup ./app-${{ matrix.dir }} > output.log 2>&1 &
+          
+          # Save PID
+          echo $! > app.pid
+          
+          # Wait a moment and check if it's running
+          sleep 3
+          if ps -p $(cat app.pid) > /dev/null; then
+            echo "Application started successfully with PID: $(cat app.pid)"
+            echo "Output log: ${{ secrets.REMOTE_PATH }}/${{ matrix.dir }}/output.log"
+          else
+            echo "Application failed to start"
+            echo "=== Output log content ==="
+            cat output.log || echo "No output log found"
+            exit 1
+          fi
+
+    - name: Verify deployment
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.REMOTE_HOST }}
+        username: ${{ secrets.REMOTE_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+          cd ${{ secrets.REMOTE_PATH }}/${{ matrix.dir }}
+          echo "=== Deployment Verification ==="
+          echo "Directory contents:"
+          ls -la
+          echo "=== Process status ==="
+          if [ -f app.pid ]; then
+            pid=$(cat app.pid)
+            if ps -p $pid > /dev/null; then
+              echo "Process running with PID: $pid"
+              echo "=== Recent output ==="
+              tail -20 output.log || echo "No output log yet"
+            else
+              echo "Process not running"
+              exit 1
+            fi
+          else
+            echo "No PID file found"
+            exit 1
+          fi
+
