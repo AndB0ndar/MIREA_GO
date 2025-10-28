@@ -86,6 +86,7 @@ curl "http://arbond.ru/go/t7/set?key=username&value=Alice"
 
 URL: **http://arbond.ru/go/t7/set**
 
+
 ---
 
 #### 2. `GET /get`

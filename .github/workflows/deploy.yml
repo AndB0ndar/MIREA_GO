@@ -46,7 +46,7 @@ jobs:
           # Extract unique directory names
           for file in $changed_files; do
             dir=$(echo "$file" | cut -d'/' -f1)
-            if [[ $dir =~ ^[0-9]+$ ]] && [ -d "$dir" ] && [ -f "$dir/go.mod" ]; then
+            if [[ $dir =~ ^[0-9]+$ ]] && [ -d "$dir" ] && [ -f "$dir/app/go.mod" ]; then
               if [[ ! " $changed_dirs " =~ " $dir " ]]; then
                 changed_dirs="$changed_dirs $dir"
               fi
