@@ -80,12 +80,12 @@ app
 
 Пример:
 ```bash
-curl "http://arbond.ru/go/t7/set?key=username&value=Alice"
+curl "http://arbond.ru/go/7/set?key=username&value=Alice"
 ```
 
 Ответ: `Value 'Alice' set for key 'username' with TTL 10s`
 
-URL: **http://arbond.ru/go/t7/set**
+URL: **http://arbond.ru/go/7/set**
 
 
 ---
@@ -98,14 +98,14 @@ URL: **http://arbond.ru/go/t7/set**
 
 Пример:
 ```bash
-curl "http://arbond.ru/go/t7/get?key=username"
+curl "http://arbond.ru/go/7/get?key=username"
 ```
 
 Ответы:
 - Найден: `Alice`
 - Не найден: `Key not found` (404)
 
-URL: **http://arbond.ru/go/t7/get**
+URL: **http://arbond.ru/go/7/get**
 
 ---
 
@@ -117,14 +117,14 @@ URL: **http://arbond.ru/go/t7/get**
 
 Пример:
 ```bash
-curl "http://arbond.ru/go/t7/ttl?key=username"
+curl "http://arbond.ru/go/7/ttl?key=username"
 ```
 
 Ответы:
 - Найден: `7` (осталось секунд)
 - Не найден: `Key not found` (404)
 
-URL: **http://arbond.ru/go/t7/ttl**
+URL: **http://arbond.ru/go/7/ttl**
 
 ## Тестирование
 
@@ -132,18 +132,18 @@ URL: **http://arbond.ru/go/t7/ttl**
 
 ### Успешное сохранение и чтение
 ```bash
-curl "http://arbond.ru/go/t7/set?key=username&value=Alice"
-curl "http://arbond.ru/go/t7/get?key=username"
+curl "http://arbond.ru/go/7/set?key=username&value=Alice"
+curl "http://arbond.ru/go/7/get?key=username"
 ```
 
 ### Проверка TTL
 ```bash
-curl "http://arbond.ru/go/t7/ttl?key=username"
+curl "http://arbond.ru/go/7/ttl?key=username"
 ```
 
 ### Обработка отсутствующего ключа
 ```bash
-curl "http://arbond.ru/go/t7/get?key=nonexistent"
+curl "http://arbond.ru/go/7/get?key=nonexistent"
 ```
 
 ### Проверка истечения TTL

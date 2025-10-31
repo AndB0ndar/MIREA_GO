@@ -3,6 +3,7 @@ package main
 import (
     "fmt"
     "log"
+    "net"
     "net/http"
     "os"
     "strings"
@@ -14,10 +15,18 @@ import (
 )
 
 func main() {
-    c := cache.New("localhost:6379")
+    _ = godotenv.Load()
+
+    redis_host := os.Getenv("REDIS_HOST")
+    c := cache.New(redis_host)
     defer c.Close()
 
     mux := http.NewServeMux()
+
+    mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+        w.WriteHeader(http.StatusOK)
+        w.Write([]byte("OK"))
+    })
 
     mux.HandleFunc("/set", func(w http.ResponseWriter, r *http.Request) {
         key := r.URL.Query().Get("key")
@@ -68,37 +77,32 @@ func main() {
         fmt.Fprintf(w, "DELETE endpoint would remove key: %s", key)
     })
 
-    _ = godotenv.Load()
-
-    port := os.Getenv("PORT")
-    if port == "" {
-        port = "8080"
+    socketPath := os.Getenv("SOCKET_PATH")
+    if socketPath == "" {
+        socketPath = "/tmp/app.sock"
     }
-    addr := ":" + port
-
-    // Get prefix from environment and build the router
-    prefix := GetAPIPrefix()
-    mainMux := BuildAPIPrefix(prefix, mux)
-
-    log.Println("Server listening on ", addr)
-    log.Println("API Prefix:", prefix)
-    log.Println("Available endpoints:")
-    
-    // Update the logged endpoints to show the actual prefixed URLs
-    basePath := prefix
-    if basePath == "" {
-        basePath = "/"
-    } else {
-        basePath = basePath + "/"
+    // Check if socket file already exists
+    if _, err := os.Stat(socketPath); err == nil {
+        log.Fatalf("Error: socket file already exists at %s. Remove it manually or choose a different path.", socketPath)
+    }
+    // Create listener on Unix socket
+    listener, err := net.Listen("unix", socketPath)
+    if err != nil {
+        log.Fatal(err)
+    }
+    // Set appropriate permissions on the socket file
+    if err := os.Chmod(socketPath, 0666); err != nil {
+        log.Fatal(err)
     }
 
-    log.Println("Server listening on ", addr)
+    log.Println("Server listening on Unix socket: ", socketPath)
     log.Println("Available endpoints:")
     log.Println("  GET /set?key=name&value=John")
     log.Println("  GET /get?key=name")
     log.Println("  GET /ttl?key=name")
     log.Println("  GET /del?key=name")
-    log.Fatal(http.ListenAndServe(addr, mainMux))
+
+    log.Fatal(http.Serve(listener, mux))
 }
 
 func BuildAPIPrefix(prefix string, originalMux http.Handler) http.Handler {
@@ -122,4 +126,3 @@ func GetAPIPrefix() string {
     prefix = strings.TrimSuffix(prefix, "/")
     return prefix
 }
-

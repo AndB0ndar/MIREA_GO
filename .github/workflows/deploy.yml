@@ -14,6 +14,7 @@ on:
       - '9/**'
       - '*/**'
 
+
 jobs:
   detect-changes:
     runs-on: ubuntu-latest
@@ -85,36 +86,31 @@ jobs:
         cd ${{ matrix.dir }}/app
         go mod download
 
+    - name: Build Go project
+      run: |
+        cd ${{ matrix.dir }}/app
+        echo "Building project in ${{ matrix.dir }}/app"
+        go mod tidy
+        go build -v -o app ./cmd/server
+        ls -la
+
     - name: Create .env file
       run: |
         cd ${{ matrix.dir }}
         # Create .env file with API prefix based on directory
         cat > .env << EOF
         # Auto-generated environment configuration
-        API_PREFIX=/go/${{ matrix.dir }}
         DB_DSN=${{ secrets.DB_DSN }}
-        PORT=$((8000 + ${{ matrix.dir }}))
-        #APP_NAME=go-project-${{ matrix.dir }}
-        #DEPLOYMENT_ENV=production
-        #VERSION=${{ github.sha }}
+        SOCKET_PATH=${{ secrets.REMOTE_PATH }}/${{ matrix.dir }}.sock
+        REDIS_HOST=${{ secrets.REDIS_HOST }}
         EOF
-        
         echo "Generated .env file for project ${{ matrix.dir }}:"
-        cat .env
-
-    - name: Build Go project
-      run: |
-        cd ${{ matrix.dir }}/app
-        echo "Building project in ${{ matrix.dir }}/app"
-        go mod tidy
-        go build -o app-${{ matrix.dir }} ./cmd/server
-        ls -la
 
     - name: Create deployment package
       run: |
         mkdir -p deploy-${{ matrix.dir }}
 
-        cp ${{ matrix.dir }}/app/app-${{ matrix.dir }} deploy-${{ matrix.dir }}/
+        cp ${{ matrix.dir }}/app/app deploy-${{ matrix.dir }}/
         cp ${{ matrix.dir }}/.env deploy-${{ matrix.dir }}/
         
         tar -czf deploy-${{ matrix.dir }}.tar.gz -C deploy-${{ matrix.dir }} .
@@ -142,42 +138,54 @@ jobs:
         script: |
           cd ${{ secrets.REMOTE_PATH }}
           
-          # Create project directory if it doesn't exist
-          mkdir -p ${{ matrix.dir }}
-
-          # Extract archive to project directory
-          echo "Extracting archive for project ${{ matrix.dir }}..."
-          tar -xzf deploy-${{ matrix.dir }}.tar.gz -C ${{ matrix.dir }}
+          # Stop existing process and clean up socket
+          if [ -f ${{ matrix.dir }}/app.pid ]; then
+            pid=$(cat ${{ matrix.dir }}/app.pid)
+            if kill -0 $pid 2>/dev/null; then
+              echo "Stopping existing process for project ${{ matrix.dir }} (PID: $pid)"
+              kill $pid
+              sleep 2
+            fi
+          fi
           
-          # Clean up archive
+          # Remove old socket file
+          SOCKET_PATH="${{ secrets.REMOTE_PATH }}/${{ matrix.dir }}.sock"
+          if [ -S "$SOCKET_PATH" ]; then
+            echo "Removing old socket: $SOCKET_PATH"
+            rm -f "$SOCKET_PATH"
+          fi
+
+          # Extract and deploy
+          mkdir -p ${{ matrix.dir }}
+          tar -xzf deploy-${{ matrix.dir }}.tar.gz -C ${{ matrix.dir }}
           rm -f deploy-${{ matrix.dir }}.tar.gz
           
           cd ${{ matrix.dir }}
-
-          # Stop existing process if running
-          if [ -f app.pid ]; then
-            pid=$(cat app.pid)
-            if kill -0 $pid 2>/dev/null; then
-              echo "Stopping existing process (PID: $pid)..."
-              kill $pid
-              sleep 3
-            fi
-          fi
-
-          # Make binary executable
-          chmod +x app-${{ matrix.dir }}
-
-          # Load environment variables from .env file
-          set -a
+          chmod +x app
           source .env
-          set +a
           
-          # Start with nohup
-          echo "Starting application with nohup..."
-          nohup ./app-${{ matrix.dir }} > output.log 2>&1 &
-          
-          # Save PID
+          echo "Starting project ${{ matrix.dir }} on Unix socket: $SOCKET_PATH"
+          nohup ./app > output.log 2>&1 &
           echo $! > app.pid
+
+          # Wait for socket to be created
+          echo "Waiting for socket creation..."
+          for i in {1..10}; do
+            if [ -S "$SOCKET_PATH" ]; then
+              echo "Socket created: $SOCKET_PATH"
+              break
+            fi
+            sleep 1
+          done
+          
+          if [ ! -S "$SOCKET_PATH" ]; then
+            echo "Socket was not created"
+            tail -20 output.log
+            exit 1
+          fi
+          
+          # Set proper permissions for nginx
+          chmod 666 "$SOCKET_PATH"
           
           # Wait a moment and check if it's running
           sleep 3
@@ -191,18 +199,19 @@ jobs:
             exit 1
           fi
 
-    - name: Verify deployment
+    - name: Verify deployment structure
       uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ secrets.REMOTE_HOST }}
         username: ${{ secrets.REMOTE_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
-          cd ${{ secrets.REMOTE_PATH }}/${{ matrix.dir }}
-          echo "=== Deployment Verification ==="
-          echo "Directory contents:"
-          ls -la
+          echo "=== Socket file permissions ==="
+          ls -la ${{ secrets.REMOTE_PATH }}/${{ matrix.dir }}.sock
+          echo "=== Deployment structure for project ${{ matrix.dir }} ==="
+          ls -la ${{ secrets.REMOTE_PATH }}/${{ matrix.dir }}/
           echo "=== Process status ==="
+          cd ${{ secrets.REMOTE_PATH }}/${{ matrix.dir }}
           if [ -f app.pid ]; then
             pid=$(cat app.pid)
             if ps -p $pid > /dev/null; then
@@ -221,7 +230,6 @@ jobs:
     - name: Clean up local files
       if: always()
       run: |
-        rm -rf deploy-${{ matrix.dir }}
-        rm -f deploy-${{ matrix.dir }}.tar.gz
+        rm -rf deploy-${{ matrix.dir }} deploy-${{ matrix.dir }}.tar.gz
         echo "Local cleanup completed"
 
