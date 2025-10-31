@@ -8,14 +8,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/joho/godotenv"
-
 	"app/internal/cache"
 )
 
 func main() {
-	_ = godotenv.Load()
-
 	redis_host := os.Getenv("REDIS_HOST")
 	c := cache.New(redis_host)
 	defer c.Close()

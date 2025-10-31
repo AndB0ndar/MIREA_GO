@@ -3,15 +3,7 @@ name: Build and Deploy Go Projects
 on:
   push:
     paths:
-      - '1/**'
-      - '2/**'
-      - '3/**'
-      - '4/**'
-      - '5/**'
-      - '6/**'
-      - '7/**'
-      - '8/**'
-      - '9/**'
+      - '[0-9]*/**'
       - '*/**'
 
 
@@ -86,11 +78,6 @@ jobs:
       with:
         go-version: '1.21'
 
-    - name: Download dependencies
-      run: |
-        cd ${{ matrix.dir }}/app
-        go mod download
-
     - name: Build Go project
       run: |
         cd ${{ matrix.dir }}/app
@@ -99,24 +86,11 @@ jobs:
         go build -v -o app ./cmd/server
         ls -la
 
-    - name: Create .env file
-      run: |
-        cd ${{ matrix.dir }}
-        # Create .env file with API prefix based on directory
-        cat > .env << EOF
-        # Auto-generated environment configuration
-        DB_DSN=${{ secrets.DB_DSN }}
-        SOCKET_PATH=${{ secrets.REMOTE_PATH }}/${{ matrix.dir }}/${{ matrix.dir }}.sock
-        REDIS_HOST=${{ secrets.REDIS_HOST }}
-        EOF
-        echo "Generated .env file for project ${{ matrix.dir }}:"
-
     - name: Create deployment package
       run: |
         mkdir -p deploy-${{ matrix.dir }}
 
         cp ${{ matrix.dir }}/app/app deploy-${{ matrix.dir }}/
-        cp ${{ matrix.dir }}/.env deploy-${{ matrix.dir }}/
         
         tar -czf deploy-${{ matrix.dir }}.tar.gz -C deploy-${{ matrix.dir }} .
         echo "Archive contents:"
@@ -124,7 +98,7 @@ jobs:
         echo "Archive created: deploy-${{ matrix.dir }}.tar.gz"
         ls -lh deploy-${{ matrix.dir }}.tar.gz
 
-    - name: Copy files to server
+    - name: Copy archive to server
       uses: appleboy/scp-action@v0.1.3
       with:
         host: ${{ secrets.REMOTE_HOST }}
@@ -134,8 +108,12 @@ jobs:
         target: "${{ secrets.REMOTE_PATH }}/"
         strip_components: 0
 
-    - name: Deploy and run with nohup
+    - name: Deploy to server
       uses: appleboy/ssh-action@v1.0.3
+      env:
+        SOCKET_PATH=${{ secrets.REMOTE_PATH }}/${{ matrix.dir }}/${{ matrix.dir }}.sock
+        DB_DSN=${{ secrets.DB_DSN }}
+        REDIS_HOST=${{ secrets.REDIS_HOST }}
       with:
         host: ${{ secrets.REMOTE_HOST }}
         username: ${{ secrets.REMOTE_USER }}
@@ -143,22 +121,9 @@ jobs:
         script: |
           cd ${{ secrets.REMOTE_PATH }}
           
-          # Stop existing process and clean up socket
-          if [ -f ${{ matrix.dir }}/app.pid ]; then
-            pid=$(cat ${{ matrix.dir }}/app.pid)
-            if kill -0 $pid 2>/dev/null; then
-              echo "Stopping existing process for project ${{ matrix.dir }} (PID: $pid)"
-              kill $pid
-              sleep 2
-            fi
-          fi
-          
-          # Remove old socket file
-          SOCKET_PATH="${{ secrets.REMOTE_PATH }}/${{ matrix.dir }}/${{ matrix.dir }}.sock"
-          if [ -S "$SOCKET_PATH" ]; then
-            echo "Removing old socket: $SOCKET_PATH"
-            rm -f "$SOCKET_PATH"
-          fi
+          # Stop old process
+          [ -f app.pid ] && kill $(cat app.pid) 2>/dev/null || true
+          [ -S "$SOCKET_PATH" ] && rm -f "$SOCKET_PATH"
 
           # Extract and deploy
           mkdir -p ${{ matrix.dir }}
@@ -167,30 +132,16 @@ jobs:
           
           cd ${{ matrix.dir }}
           chmod +x app
-          source .env
           
-          echo "Starting project ${{ matrix.dir }} on Unix socket: $SOCKET_PATH"
           nohup ./app > output.log 2>&1 &
           echo $! > app.pid
 
           # Wait for socket to be created
-          echo "Waiting for socket creation..."
-          for i in {1..10}; do
-            if [ -S "$SOCKET_PATH" ]; then
-              echo "Socket created: $SOCKET_PATH"
-              break
-            fi
-            sleep 1
-          done
-          
-          if [ ! -S "$SOCKET_PATH" ]; then
-            echo "Socket was not created"
-            tail -20 output.log
-            exit 1
-          fi
+          for i in {1..10}; do [ -S "$SOCKET_PATH" ] && break; sleep 1; done
+          [ -S "$SOCKET_PATH" ] || (tail -20 output.log && exit 1)
           
           # Set proper permissions for nginx
-          chmod 666 "$SOCKET_PATH"
+          chmod 660 "$SOCKET_PATH"
           
           # Wait a moment and check if it's running
           sleep 3

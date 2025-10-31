@@ -9,13 +9,9 @@ import (
 	"app/internal/db"
 	"app/internal/httpapi"
 	"app/internal/models"
-
-	"github.com/joho/godotenv"
 )
 
 func main() {
-	_ = godotenv.Load()
-
 	d := db.Connect()
 
 	if err := d.AutoMigrate(&models.User{}, &models.Note{}, &models.Tag{}); err != nil {
