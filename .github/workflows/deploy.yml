@@ -29,40 +29,45 @@ jobs:
     - name: Detect changed directories
       id: detect
       run: |
-        changed_dirs=""
-        
-        # Get all changed files
+        changed_array=()
+
         if [ "${{ github.event.before }}" = "0000000000000000000000000000000000000000" ]; then
           # Initial commit - check all directories
           for dir in [0-9]*/; do
             if [ -d "$dir" ] && [ -f "$dir/go.mod" ]; then
               dir_name=${dir%/}
-              changed_dirs="$changed_dirs $dir_name"
+              changed_array+=("$dir_name")
             fi
           done
         else
-          # Compare with previous commit
           changed_files=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
-          
-          # Extract unique directory names
           for file in $changed_files; do
             dir=$(echo "$file" | cut -d'/' -f1)
             if [[ $dir =~ ^[0-9]+$ ]] && [ -d "$dir" ] && [ -f "$dir/app/go.mod" ]; then
               if [[ ! " $changed_dirs " =~ " $dir " ]]; then
-                changed_dirs="$changed_dirs $dir"
+                changed_array+=("$dir")
               fi
             fi
           done
         fi
-        
-        if [ -n "$changed_dirs" ]; then
-          changed_dirs="${changed_dirs%,}"
-          changed_dirs="[$changed_dirs]"
-          echo "changed_dirs=$changed_dirs" >> $GITHUB_OUTPUT
-          echo "Changed directories: $changed_dirs"
+
+        if [ ${#changed_array[@]} -gt 0 ]; then
+          json_array="["
+          for i in "${!changed_array[@]}"; do
+            if [ $i -gt 0 ]; then
+              json_array="$json_array,"
+            fi
+            json_array="$json_array\"${changed_array[$i]}\""
+          done
+          json_array="$json_array]"
+          
+          echo "Changed directories: $json_array"
+          echo "changed_dirs=$json_array" >> $GITHUB_OUTPUT
         else
+          echo "No changed directories found"
           echo "changed_dirs=[]" >> $GITHUB_OUTPUT
         fi
+
 
   deploy:
     needs: detect-changes
