@@ -14,13 +14,11 @@ import (
 )
 
 func main() {
-    // Инициализация кэша
     c := cache.New("localhost:6379")
     defer c.Close()
 
     mux := http.NewServeMux()
 
-    // Эндпоинт для установки значения
     mux.HandleFunc("/set", func(w http.ResponseWriter, r *http.Request) {
         key := r.URL.Query().Get("key")
         value := r.URL.Query().Get("value")
@@ -28,60 +26,45 @@ func main() {
             http.Error(w, "key and value required", http.StatusBadRequest)
             return
         }
-
         err := c.Set(key, value, 10*time.Second) // TTL = 10 секунд
         if err != nil {
             http.Error(w, err.Error(), http.StatusInternalServerError)
             return
         }
-
         fmt.Fprintf(w, "OK: %s=%s (TTL 10s)", key, value)
     })
-
-    // Эндпоинт для получения значения
     mux.HandleFunc("/get", func(w http.ResponseWriter, r *http.Request) {
         key := r.URL.Query().Get("key")
         if key == "" {
             http.Error(w, "key required", http.StatusBadRequest)
             return
         }
-
         val, err := c.Get(key)
         if err != nil {
             http.Error(w, "Key not found", http.StatusNotFound)
             return
         }
-
         fmt.Fprintf(w, "VALUE: %s=%s", key, val)
     })
-
-    // Эндпоинт для проверки TTL
     mux.HandleFunc("/ttl", func(w http.ResponseWriter, r *http.Request) {
         key := r.URL.Query().Get("key")
         if key == "" {
             http.Error(w, "key required", http.StatusBadRequest)
             return
         }
-
         ttl, err := c.TTL(key)
         if err != nil {
             http.Error(w, err.Error(), http.StatusInternalServerError)
             return
         }
-
         fmt.Fprintf(w, "TTL for %s: %v", key, ttl)
     })
-
-    // Эндпоинт для удаления ключа
     mux.HandleFunc("/del", func(w http.ResponseWriter, r *http.Request) {
         key := r.URL.Query().Get("key")
         if key == "" {
             http.Error(w, "key required", http.StatusBadRequest)
             return
         }
-
-        // Для удаления добавим метод Delete в cache.go
-        // В реальном приложении нужно добавить метод Delete в структуру Cache
         fmt.Fprintf(w, "DELETE endpoint would remove key: %s", key)
     })
 
@@ -93,7 +76,21 @@ func main() {
     }
     addr := ":" + port
 
-    mainMux := BuildAPIPrefix(mux)
+    // Get prefix from environment and build the router
+    prefix := GetAPIPrefix()
+    mainMux := BuildAPIPrefix(prefix, mux)
+
+    log.Println("Server listening on ", addr)
+    log.Println("API Prefix:", prefix)
+    log.Println("Available endpoints:")
+    
+    // Update the logged endpoints to show the actual prefixed URLs
+    basePath := prefix
+    if basePath == "" {
+        basePath = "/"
+    } else {
+        basePath = basePath + "/"
+    }
 
     log.Println("Server listening on ", addr)
     log.Println("Available endpoints:")
@@ -104,21 +101,16 @@ func main() {
     log.Fatal(http.ListenAndServe(addr, mainMux))
 }
 
-func BuildAPIPrefix(mux *http.ServeMux) *http.ServeMux {
-    prefix := GetAPIPrefix()
-    if prefix != "" {
-        mainMux := http.NewServeMux()
-        mainMux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-            if r.URL.Path == "/" {
-                fmt.Fprintf(w, "Welcome to the homepage!")
-            } else {
-                http.NotFound(w, r)
-            }
-        })
-        mainMux.Handle(prefix+"/", http.StripPrefix(prefix, mux))
-        return mainMux
+func BuildAPIPrefix(prefix string, originalMux http.Handler) http.Handler {
+    if prefix == "" {
+        return originalMux
     }
-    return mux
+    if !strings.HasPrefix(prefix, "/") {
+        prefix = "/" + prefix
+    }
+    prefixedMux := http.NewServeMux()
+    prefixedMux.Handle(prefix+"/", http.StripPrefix(prefix, originalMux))
+    return prefixedMux
 }
 
 func GetAPIPrefix() string {
@@ -130,3 +122,4 @@ func GetAPIPrefix() string {
     prefix = strings.TrimSuffix(prefix, "/")
     return prefix
 }
+

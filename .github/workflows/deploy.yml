@@ -93,7 +93,7 @@ jobs:
         # Auto-generated environment configuration
         API_PREFIX=/go/${{ matrix.dir }}
         DB_DSN=${{ secrets.DB_DSN }}
-        #PORT=$((8000 + ${{ matrix.dir }}))
+        PORT=$((8000 + ${{ matrix.dir }}))
         #APP_NAME=go-project-${{ matrix.dir }}
         #DEPLOYMENT_ENV=production
         #VERSION=${{ github.sha }}
