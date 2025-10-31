@@ -103,24 +103,3 @@ func main() {
     log.Fatal(http.Serve(listener, mux))
 }
 
-func BuildAPIPrefix(prefix string, originalMux http.Handler) http.Handler {
-    if prefix == "" {
-        return originalMux
-    }
-    if !strings.HasPrefix(prefix, "/") {
-        prefix = "/" + prefix
-    }
-    prefixedMux := http.NewServeMux()
-    prefixedMux.Handle(prefix+"/", http.StripPrefix(prefix, originalMux))
-    return prefixedMux
-}
-
-func GetAPIPrefix() string {
-    prefix := os.Getenv("API_PREFIX")
-    prefix = strings.TrimSpace(prefix)
-    if prefix != "" && !strings.HasPrefix(prefix, "/") {
-        prefix = "/" + prefix
-    }
-    prefix = strings.TrimSuffix(prefix, "/")
-    return prefix
-}
