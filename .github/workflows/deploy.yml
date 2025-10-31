@@ -111,9 +111,9 @@ jobs:
     - name: Deploy to server
       uses: appleboy/ssh-action@v1.0.3
       env:
-        SOCKET_PATH=${{ secrets.REMOTE_PATH }}/${{ matrix.dir }}/${{ matrix.dir }}.sock
-        DB_DSN=${{ secrets.DB_DSN }}
-        REDIS_HOST=${{ secrets.REDIS_HOST }}
+        SOCKET_PATH: ${{ secrets.REMOTE_PATH }}/${{ matrix.dir }}/${{ matrix.dir }}.sock
+        DB_DSN: ${{ secrets.DB_DSN }}
+        REDIS_HOST: ${{ secrets.REDIS_HOST }}
       with:
         host: ${{ secrets.REMOTE_HOST }}
         username: ${{ secrets.REMOTE_USER }}
