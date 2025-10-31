@@ -4,7 +4,11 @@ import (
     "fmt"
     "log"
     "net/http"
+    "os"
+    "strings"
     "time"
+
+    "github.com/joho/godotenv"
 
     "app/internal/cache"
 )
@@ -89,14 +93,7 @@ func main() {
     }
     addr := ":" + port
 
-    prefix := GetAPIPrefix()
-    if prefix != "" {
-        mainMux := http.NewServeMux()
-        mainMux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-            fmt.Fprintf(w, "Welcome to the homepage!")
-        })
-        mainMux.Handle(prefix + "/", http.StripPrefix(prefix, mux))
-    }
+    mainMux := BuildAPIPrefix(mux)
 
     log.Println("Server listening on ", addr)
     log.Println("Available endpoints:")
@@ -107,14 +104,29 @@ func main() {
     log.Fatal(http.ListenAndServe(addr, mainMux))
 }
 
+func BuildAPIPrefix(mux *http.ServeMux) *http.ServeMux {
+    prefix := GetAPIPrefix()
+    if prefix != "" {
+        mainMux := http.NewServeMux()
+        mainMux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+            if r.URL.Path == "/" {
+                fmt.Fprintf(w, "Welcome to the homepage!")
+            } else {
+                http.NotFound(w, r)
+            }
+        })
+        mainMux.Handle(prefix+"/", http.StripPrefix(prefix, mux))
+        return mainMux
+    }
+    return mux
+}
+
 func GetAPIPrefix() string {
     prefix := os.Getenv("API_PREFIX")
     prefix = strings.TrimSpace(prefix)
-
     if prefix != "" && !strings.HasPrefix(prefix, "/") {
         prefix = "/" + prefix
     }
-
     prefix = strings.TrimSuffix(prefix, "/")
     return prefix
 }

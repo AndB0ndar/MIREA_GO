@@ -17,6 +17,7 @@ mkdir -p app/cmd/server app/internal/cache
 cd app
 go mod init app
 go get github.com/redis/go-redis/v9
+go get github.com/joho/godotenv
 ```
 
 ## Структура проекта

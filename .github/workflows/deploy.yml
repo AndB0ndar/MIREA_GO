@@ -70,6 +70,7 @@ jobs:
     strategy:
       matrix:
         dir: ${{ fromJson(needs.detect-changes.outputs.changed_dirs) }}
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -78,6 +79,28 @@ jobs:
       uses: actions/setup-go@v4
       with:
         go-version: '1.21'
+
+    - name: Download dependencies
+      run: |
+        cd ${{ matrix.dir }}/app
+        go mod download
+
+    - name: Create .env file
+      run: |
+        cd ${{ matrix.dir }}
+        # Create .env file with API prefix based on directory
+        cat > .env << EOF
+        # Auto-generated environment configuration
+        API_PREFIX=/go/${{ matrix.dir }}
+        DB_DSN=${{ secrets.DB_DSN }}
+        #PORT=$((8000 + ${{ matrix.dir }}))
+        #APP_NAME=go-project-${{ matrix.dir }}
+        #DEPLOYMENT_ENV=production
+        #VERSION=${{ github.sha }}
+        EOF
+        
+        echo "Generated .env file for project ${{ matrix.dir }}:"
+        cat .env
 
     - name: Build Go project
       run: |
@@ -92,20 +115,13 @@ jobs:
         mkdir -p deploy-${{ matrix.dir }}
 
         cp ${{ matrix.dir }}/app/app-${{ matrix.dir }} deploy-${{ matrix.dir }}/
+        cp ${{ matrix.dir }}/.env deploy-${{ matrix.dir }}/
         
-        # Copy configuration files if they exist
-        if [ -f "${{ matrix.dir }}/.env" ]; then
-          cp ${{ matrix.dir }}/.env deploy-${{ matrix.dir }}/
-        fi
-        if [ -f "${{ matrix.dir }}/config.yaml" ]; then
-          cp ${{ matrix.dir }}/config.yaml deploy-${{ matrix.dir }}/
-        fi
-        if [ -f "${{ matrix.dir }}/config.json" ]; then
-          cp ${{ matrix.dir }}/config.json deploy-${{ matrix.dir }}/
-        fi
-        
-        echo "Deployment package contents:"
-        ls -la deploy-${{ matrix.dir }}/
+        tar -czf deploy-${{ matrix.dir }}.tar.gz -C deploy-${{ matrix.dir }} .
+        echo "Archive contents:"
+        tar -tzf deploy-${{ matrix.dir }}.tar.gz
+        echo "Archive created: deploy-${{ matrix.dir }}.tar.gz"
+        ls -lh deploy-${{ matrix.dir }}.tar.gz
 
     - name: Copy files to server
       uses: appleboy/scp-action@v0.1.3
@@ -113,9 +129,9 @@ jobs:
         host: ${{ secrets.REMOTE_HOST }}
         username: ${{ secrets.REMOTE_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
-        source: "deploy-${{ matrix.dir }}/*"
-        target: "${{ secrets.REMOTE_PATH }}/${{ matrix.dir }}/"
-        strip_components: 1
+        source: "deploy-${{ matrix.dir }}.tar.gz"
+        target: "${{ secrets.REMOTE_PATH }}/"
+        strip_components: 0
 
     - name: Deploy and run with nohup
       uses: appleboy/ssh-action@v1.0.3
@@ -124,17 +140,37 @@ jobs:
         username: ${{ secrets.REMOTE_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
-          cd ${{ secrets.REMOTE_PATH }}/${{ matrix.dir }}
+          cd ${{ secrets.REMOTE_PATH }}
           
+          # Create project directory if it doesn't exist
+          mkdir -p ${{ matrix.dir }}
+
+          # Extract archive to project directory
+          echo "Extracting archive for project ${{ matrix.dir }}..."
+          tar -xzf deploy-${{ matrix.dir }}.tar.gz -C ${{ matrix.dir }}
+          
+          # Clean up archive
+          rm -f deploy-${{ matrix.dir }}.tar.gz
+          
+          cd ${{ matrix.dir }}
+
           # Stop existing process if running
-          if pgrep -f "app-${{ matrix.dir }}"; then
-            echo "Stopping existing process..."
-            pkill -f "app-${{ matrix.dir }}"
-            sleep 2
+          if [ -f app.pid ]; then
+            pid=$(cat app.pid)
+            if kill -0 $pid 2>/dev/null; then
+              echo "Stopping existing process (PID: $pid)..."
+              kill $pid
+              sleep 3
+            fi
           fi
-          
+
           # Make binary executable
           chmod +x app-${{ matrix.dir }}
+
+          # Load environment variables from .env file
+          set -a
+          source .env
+          set +a
           
           # Start with nohup
           echo "Starting application with nohup..."
@@ -151,7 +187,7 @@ jobs:
           else
             echo "Application failed to start"
             echo "=== Output log content ==="
-            cat output.log || echo "No output log found"
+            tail -20 output.log || echo "No output log found"
             exit 1
           fi
 
@@ -181,4 +217,11 @@ jobs:
             echo "No PID file found"
             exit 1
           fi
+
+    - name: Clean up local files
+      if: always()
+      run: |
+        rm -rf deploy-${{ matrix.dir }}
+        rm -f deploy-${{ matrix.dir }}.tar.gz
+        echo "Local cleanup completed"
 
