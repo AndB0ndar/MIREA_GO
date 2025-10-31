@@ -118,6 +118,7 @@ jobs:
         host: ${{ secrets.REMOTE_HOST }}
         username: ${{ secrets.REMOTE_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
+        envs: SOCKET_PATH,DB_DSN,REDIS_HOST
         script: |
           cd ${{ secrets.REMOTE_PATH }}
           
