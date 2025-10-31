@@ -101,7 +101,7 @@ jobs:
         cat > .env << EOF
         # Auto-generated environment configuration
         DB_DSN=${{ secrets.DB_DSN }}
-        SOCKET_PATH=${{ secrets.REMOTE_PATH }}/${{ matrix.dir }}.sock
+        SOCKET_PATH=${{ secrets.REMOTE_PATH }}/${{ matrix.dir }}/${{ matrix.dir }}.sock
         REDIS_HOST=${{ secrets.REDIS_HOST }}
         EOF
         echo "Generated .env file for project ${{ matrix.dir }}:"
@@ -149,7 +149,7 @@ jobs:
           fi
           
           # Remove old socket file
-          SOCKET_PATH="${{ secrets.REMOTE_PATH }}/${{ matrix.dir }}.sock"
+          SOCKET_PATH="${{ secrets.REMOTE_PATH }}/${{ matrix.dir }}/${{ matrix.dir }}.sock"
           if [ -S "$SOCKET_PATH" ]; then
             echo "Removing old socket: $SOCKET_PATH"
             rm -f "$SOCKET_PATH"
@@ -207,7 +207,7 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
           echo "=== Socket file permissions ==="
-          ls -la ${{ secrets.REMOTE_PATH }}/${{ matrix.dir }}.sock
+          ls -la ${{ secrets.REMOTE_PATH }}/${{ matrix.dir }}/${{ matrix.dir }}.sock
           echo "=== Deployment structure for project ${{ matrix.dir }} ==="
           ls -la ${{ secrets.REMOTE_PATH }}/${{ matrix.dir }}/
           echo "=== Process status ==="

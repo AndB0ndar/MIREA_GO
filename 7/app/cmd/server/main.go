@@ -22,12 +22,10 @@ func main() {
     defer c.Close()
 
     mux := http.NewServeMux()
-
     mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
         w.WriteHeader(http.StatusOK)
         w.Write([]byte("OK"))
     })
-
     mux.HandleFunc("/set", func(w http.ResponseWriter, r *http.Request) {
         key := r.URL.Query().Get("key")
         value := r.URL.Query().Get("value")
