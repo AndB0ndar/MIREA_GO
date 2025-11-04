@@ -327,7 +327,8 @@ curl -X POST http://arbond.ru/go/9/auth/register \
   -H "Content-Type: application/json" \
   -d '{"email":"test@example.com","password":"Secret123!"}'
 ```
-Ответ: 201 Created с данными пользователя
+
+![registrate](./img/registrate.png)
 
 ### Повторная регистрация с тем же email
 ```bash
@@ -335,7 +336,8 @@ curl -X POST http://arbond.ru/go/9/auth/register \
   -H "Content-Type: application/json" \
   -d '{"email":"test@example.com","password":"AnotherPass"}'
 ```
-Ответ: 409 Conflict, "email_taken"
+
+![err-reg](./img/err-reg.png)
 
 ### Успешный вход
 ```bash
@@ -343,7 +345,8 @@ curl -X POST http://arbond.ru/go/9/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"test@example.com","password":"Secret123!"}'
 ```
-Ответ: 200 OK с данными пользователя
+
+![login](./img/login.png)
 
 ### Неудачный вход (неверный пароль)
 ```bash
@@ -351,7 +354,8 @@ curl -X POST http://arbond.ru/go/9/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"test@example.com","password":"wrong"}'
 ```
-Ответ: 401 Unauthorized, "invalid_credentials"
+
+![login-invalid-pwd](./img/login-invalid-pwd.png)
 
 ### Неудачный вход (несуществующий email)
 ```bash
@@ -359,7 +363,8 @@ curl -X POST http://arbond.ru/go/9/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"nonexistent@example.com","password":"any"}'
 ```
-Ответ: 401 Unauthorized, "invalid_credentials"
+
+![login-invalid-email](./img/login-invalid-email.png)
 
 ### Тестирование валидации:
 
@@ -369,7 +374,8 @@ curl -X POST http://arbond.ru/go/9/auth/register \
   -H "Content-Type: application/json" \
   -d '{"email":"test2@example.com","password":"short"}'
 ```
-Ответ: 400 Bad Request, "email_required_and_password_min_8"
+
+![short](./img/short.png)
 
 #### Отсутствует email
 ```bash
@@ -377,7 +383,8 @@ curl -X POST http://arbond.ru/go/9/auth/register \
   -H "Content-Type: application/json" \
   -d '{"password":"Secret123!"}'
 ```
-Ответ: 400 Bad Request, "email_required_and_password_min_8"
+
+![no-email](./img/no-email.png)
 
 #### Невалидный JSON
 ```bash
@@ -385,7 +392,8 @@ curl -X POST http://arbond.ru/go/9/auth/register \
   -H "Content-Type: application/json" \
   -d '{"email":"test@example.com","password":"Secret123!"'
 ```
-Ответ: 400 Bad Request, "invalid_json"
+
+![invalid-json](./img/invalid-json.png)
 
 ---
 
