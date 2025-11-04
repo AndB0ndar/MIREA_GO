@@ -15,7 +15,7 @@ func TestCreateAndGetNote(t *testing.T) {
 		uri = "mongodb://root:secret@localhost:27017/pz8_test?authSource=admin"
 	}
 
-	deps, err := db.ConnectMongo(ctx, uri, "pz8_test")
+	deps, err := db.ConnectMongo(ctx, uri)
 	if err != nil {
 		t.Fatalf("Failed to connect to MongoDB: %v", err)
 	}
@@ -72,7 +72,7 @@ func TestDuplicateTitle(t *testing.T) {
 		uri = "mongodb://root:secret@localhost:27017/pz8_test_duplicate?authSource=admin"
 	}
 
-	deps, err := db.ConnectMongo(ctx, uri, "pz8_test_duplicate")
+	deps, err := db.ConnectMongo(ctx, uri)
 	if err != nil {
 		t.Fatalf("Failed to connect to MongoDB: %v", err)
 	}
@@ -116,7 +116,7 @@ func TestUpdateNote(t *testing.T) {
 		uri = "mongodb://root:secret@localhost:27017/pz8_test_update?authSource=admin"
 	}
 
-	deps, err := db.ConnectMongo(ctx, uri, "pz8_test_update")
+	deps, err := db.ConnectMongo(ctx, uri)
 	if err != nil {
 		t.Fatalf("Failed to connect to MongoDB: %v", err)
 	}

@@ -24,12 +24,11 @@ func main() {
 
 	// Получаем настройки из переменных окружения
 	dsn := getEnv("MONGO_DSN", "mongodb://root:secret@localhost:27017/pz8?authSource=admin")
-	dbName := getEnv("MONGO_DB", "pz8")
 	addr := getEnv("HTTP_ADDR", ":8080")
 
 	// Подключаемся к MongoDB
 	ctx := context.Background()
-	deps, err := db.ConnectMongo(ctx, dsn, dbName)
+	deps, err := db.ConnectMongo(ctx, dsn)
 	if err != nil {
 		log.Fatalf("Failed to connect to MongoDB: %v", err)
 	}

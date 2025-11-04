@@ -25,9 +25,8 @@ func main() {
 
 	// Подключаемся к MongoDB
 	dsn := getEnv("MONGO_DSN", "mongodb://root:secret@localhost:27017/pz8?authSource=admin")
-	dbName := getEnv("MONGO_DB", "pz8")
 	ctx := context.Background()
-	deps, err := db.ConnectMongo(ctx, dsn, dbName)
+	deps, err := db.ConnectMongo(ctx, dsn)
 	if err != nil {
 		log.Fatalf("Failed to connect to MongoDB: %v", err)
 	}
