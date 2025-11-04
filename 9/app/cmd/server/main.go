@@ -33,6 +33,12 @@ func main() {
 	}
 
 	r := chi.NewRouter()
+	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{"status":"ok"}`))
+	})
+	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{"message":"Hi! I am okey"}`))
+	})
 	r.Post("/auth/register", authHandler.Register)
 	r.Post("/auth/login", authHandler.Login)
 

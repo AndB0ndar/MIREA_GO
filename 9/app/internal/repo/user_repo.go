@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"gorm.io/gorm"
+	"strings"
 
 	"app/internal/core"
 )
@@ -26,7 +27,8 @@ func (r *UserRepo) AutoMigrate() error {
 func (r *UserRepo) Create(ctx context.Context, u *core.User) error {
 	if err := r.db.WithContext(ctx).Create(u).Error; err != nil {
 		// Проверка на дубликат email
-		if err.Error() == "ERROR: duplicate key value violates unique constraint \"idx_users_email\" (SQLSTATE 23505)" {
+		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") &&
+			strings.Contains(err.Error(), "email") {
 			return ErrEmailTaken
 		}
 		return err
