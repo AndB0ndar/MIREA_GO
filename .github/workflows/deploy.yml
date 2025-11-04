@@ -33,23 +33,28 @@ jobs:
           done
         else
           changed_files=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
+          
           for file in $changed_files; do
             dir=$(echo "$file" | cut -d'/' -f1)
             if [[ $dir =~ ^[0-9]+$ ]] && [ -d "$dir" ] && [ -f "$dir/app/go.mod" ]; then
-              if [[ ! " $changed_dirs " =~ " $dir " ]]; then
-                changed_array+=("$dir")
-              fi
+              changed_array+=("$dir")
             fi
           done
         fi
 
+        # Remove duplicates using sort -u
         if [ ${#changed_array[@]} -gt 0 ]; then
+          unique_changed_array=($(printf "%s\n" "${changed_array[@]}" | sort -u))
+          
           json_array="["
-          for i in "${!changed_array[@]}"; do
-            if [ $i -gt 0 ]; then
+          first=true
+          for dir in "${unique_changed_array[@]}"; do
+            if [ "$first" = true ]; then
+              first=false
+            else
               json_array="$json_array,"
             fi
-            json_array="$json_array\"${changed_array[$i]}\""
+            json_array="$json_array\"$dir\""
           done
           json_array="$json_array]"
           
