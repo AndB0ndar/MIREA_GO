@@ -123,11 +123,12 @@ jobs:
         MONGO_URL: ${{ secrets.MONGO_URL }}
         MONGO_DSN: ${{ secrets.MONGO_DSN }}
         REDIS_HOST: ${{ secrets.REDIS_HOST }}
+        SECRET: ${{ secrets.SECRET }}
       with:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
-        envs: SOCKET_PATH,POSTGRESQL_URL,POSTGRESQL_DSN,MONGO_URL,MONGO_DSN,REDIS_HOST
+        envs: SOCKET_PATH,POSTGRESQL_URL,POSTGRESQL_DSN,MONGO_URL,MONGO_DSN,REDIS_HOST,SECRET
         script: |
           cd ${{ secrets.REMOTE_PATH }}
           
