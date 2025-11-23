@@ -487,3 +487,4 @@ curl -H "Authorization: Bearer USER_TOKEN" \
 - **Refresh механика** с blacklist для безопасного обновления токенов
 - **Двойная реализация** - CLI (TCP порт) и Server (Unix socket) версии
 - **Единый формат ошибок** для согласованного API
+

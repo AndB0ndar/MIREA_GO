@@ -112,14 +112,12 @@ jobs:
       if: steps.check_swagger.outputs.has_swagger == 'true'
       run: |
         cd ${{ matrix.dir }}/app
-        elif [ -f "./cmd/server/main.go" ]; then
-          ENTRY_POINT="cmd/server/main.go"
-        else
+
+        if [ ! -f "./cmd/server/main.go" ]; then
           exit 0
         fi
-        
-        echo "Generating Swagger from $ENTRY_POINT"
-        swag init -g $ENTRY_POINT -o docs
+        echo "Generating Swagger"
+        swag init -g cmd/server/main.go -o docs
         echo "Swagger docs generated:"
         ls -la docs/
 
