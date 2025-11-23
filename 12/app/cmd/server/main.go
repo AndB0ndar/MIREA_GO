@@ -13,6 +13,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	httpSwagger "github.com/swaggo/http-swagger"
 
@@ -50,8 +51,14 @@ func main() {
 	router.Get("/docs/*", httpSwagger.Handler(
 		httpSwagger.URL("/docs/swagger.json"),
 	))
+	exePath, err := os.Executable()
+	if err != nil {
+		log.Fatal(err)
+	}
+	exeDir := filepath.Dir(exePath)
+	swaggerPath := filepath.Join(exeDir, "docs", "swagger.json")
 	router.Get("/docs/swagger.json", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "docs/swagger.json")
+		http.ServeFile(w, r, swaggerPath)
 	})
 
 	log.Println("Server starting on Unix socket:", cfg.SocketPath)
