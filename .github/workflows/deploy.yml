@@ -89,14 +89,14 @@ jobs:
         cd ${{ matrix.dir }}/app
         echo "Building project in ${{ matrix.dir }}/app"
         go mod tidy
-        go build -v -o app ./cmd/server
+        go build -v -o ${{ matrix.dir }}-app ./cmd/server
         ls -la
 
     - name: Create deployment package
       run: |
         mkdir -p deploy-${{ matrix.dir }}
 
-        cp ${{ matrix.dir }}/app/app deploy-${{ matrix.dir }}/
+        cp ${{ matrix.dir }}/app/${{ matrix.dir }}-app deploy-${{ matrix.dir }}/
         
         tar -czf deploy-${{ matrix.dir }}.tar.gz -C deploy-${{ matrix.dir }} .
         echo "Archive contents:"
@@ -142,9 +142,9 @@ jobs:
           rm -f deploy-${{ matrix.dir }}.tar.gz
           
           cd ${{ matrix.dir }}
-          chmod +x app
+          chmod +x ${{ matrix.dir }}-app
           
-          nohup ./app > output.log 2>&1 &
+          nohup ./${{ matrix.dir }}-app > output.log 2>&1 &
           echo $! > app.pid
 
           # Wait for socket to be created

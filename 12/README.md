@@ -75,8 +75,7 @@ app
 // @description Учебный REST API для управления заметками (CRUD).
 // @contact.name Backend Course
 // @contact.email example@university.ru
-// @BasePath /api/v1
-// @host localhost:8080
+// @BasePath /
 // @schemes http
 package main
 ```
@@ -190,32 +189,6 @@ func NewRouter(h *handlers.Handler) *chi.Mux {
 - Упрощает группировку связанных эндпоинтов в документации
 - Подготавливает структуру для будущего расширения API
 
-### Файл: `Makefile`
-
-Автоматизация процессов генерации документации и запуска приложения.
-
-**Ключевые компоненты:**
-
-```makefile
-.PHONY: run swagger
-
-run:
-	go run ./cmd/api
-
-swagger:
-	swag init -g cmd/api/main.go -o docs
-
-build:
-	go build -o bin/api ./cmd/api
-
-all: swagger run
-```
-
-**Архитектурное значение:**
-- Стандартизирует процесс разработки
-- Автоматизирует обновление документации
-- Упрощает развертывание и тестирование
-
 ---
 
 ## Документация API эндпоинтов
@@ -224,7 +197,7 @@ all: swagger run
 
 Интерактивная документация API.
 
-**Полный URL:** `http://localhost:8080/docs/index.html`
+**Полный URL:** `http://arbond.ru/go/12/docs/index.html`
 
 **Функциональность:**
 - Просмотр всех доступных эндпоинтов
@@ -239,7 +212,7 @@ all: swagger run
 4. Заполнить параметры
 5. Выполнить запрос
 
-### Эндпоинт: `POST /notes`
+### Эндпоинт: [POST /login](http://arbond.ru/go/12/notes)
 
 Создание новой заметки.
 
@@ -249,7 +222,7 @@ all: swagger run
 - Успешный ответ: 201 Created с объектом Note
 - Ошибки: 400, 500
 
-### Эндпоинт: `GET /notes`
+### Эндпоинт: [GET /notes](http://arbond.ru/go/11/notes)
 
 Получение списка всех заметок.
 
@@ -258,7 +231,7 @@ all: swagger run
 - Успешный ответ: 200 OK с массивом Note
 - Ошибки: 500
 
-### Эндпоинт: `GET /notes/{id}`
+### Эндпоинт: [GET /notes/{id}](http://arbond.ru/go/11/notes/{id})
 
 Получение заметки по ID.
 
@@ -268,7 +241,7 @@ all: swagger run
 - Успешный ответ: 200 OK с объектом Note
 - Ошибки: 400, 404, 500
 
-### Эндпоинт: `PATCH /notes/{id}`
+### Эндпоинт: [PATCH /notes/{id}](http://arbond.ru/go/11/notes/{id})
 
 Обновление существующей заметки.
 
@@ -279,7 +252,7 @@ all: swagger run
 - Успешный ответ: 200 OK с объектом Note
 - Ошибки: 400, 404, 500
 
-### Эндпоинт: `DELETE /notes/{id}`
+### Эндпоинт: [DELETE /notes/{id}](http://arbond.ru/go/11/notes/{id})
 
 Удаление заметки.
 
@@ -321,10 +294,10 @@ make run
 
 ```bash
 # Сервер запускается на порту 8080
-curl http://localhost:8080/notes
+curl http://arbond.ru/go/12/notes
 
 # Документация доступна по адресу
-open http://localhost:8080/docs/index.html
+open http://arbond.ru/go/12/docs/index.html
 ```
 
 ---
@@ -362,7 +335,7 @@ swagger.yaml
 1. **Открытие документации:**
    ```bash
    make all
-   # Перейти по адресу http://localhost:8080/docs/index.html
+   # Перейти по адресу http://arbond.ru/go/12/docs/index.html
    ```
 
 2. **Тест создания заметки через Swagger UI:**
@@ -425,9 +398,8 @@ swagger.yaml
 В ходе практической работы успешно реализована автоматическая генерация документации для REST API проекта app.
 Приложение предоставляет интерактивную документацию Swagger UI на эндпоинте `/docs` с полным описанием всех CRUD операций:
 
-- **http://localhost:8080/docs** - интерактивная документация API
+- **http://arbond.ru/go/12/docs** - интерактивная документация API
 - **Автоматическая генерация** из аннотаций в коде
 - **Полное описание** всех эндпоинтов и моделей данных
 - **Интерактивное тестирование** без внешних инструментов
 
-Реализованное решение демонстрирует принципы промышленной разработки API с автоматизированной документацией и может служить основой для более сложных систем, требующих строгой документации и удобного тестирования интерфейсов.

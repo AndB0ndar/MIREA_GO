@@ -28,8 +28,6 @@ go get github.com/go-chi/chi/v5
 
 ```
 app
-├── api
-│   └── openapi.yaml
 ├── cmd
 │   ├── api
 │   │   └── main.go
@@ -179,7 +177,6 @@ func NewRouter(h *handlers.Handler) *chi.Mux {
 
 **Архитектурное значение:**
 - Централизованная конфигурация маршрутов
-- Поддержка версионирования API (/api/v1/)
 - Чистое разделение ответственности
 
 ### Файл: `cmd/api/main.go`
@@ -189,14 +186,9 @@ func NewRouter(h *handlers.Handler) *chi.Mux {
 **Ключевые компоненты:**
 
 ```go
-func main() {
-    noteRepo := repo.NewNoteRepoMem()
-    handler := &handlers.Handler{Repo: noteRepo}
-    router := httpx.NewRouter(handler)
-    
-    log.Println("Server starting on http://localhost:8080")
-    log.Fatal(http.ListenAndServe(":8080", router))
-}
+noteRepo := repo.NewNoteRepoMem()
+handler := &handlers.Handler{Repo: noteRepo}
+router := httpx.NewRouter(handler)
 ```
 
 **Архитектурное значение:**
@@ -208,11 +200,11 @@ func main() {
 
 ## Документация API эндпоинтов
 
-### Эндпоинт: `POST /api/v1/notes`
+### Эндпоинт: [POST /notes](http://arbond.ru/go/11/notes)
 
 Создание новой заметки.
 
-**URL:** `http://localhost:8080/api/v1/notes`
+**URL:** `http://arbond.ru/go/11/notes`
 
 **Тело запроса (JSON):**
 ```json
@@ -237,11 +229,11 @@ func main() {
 - `400 Bad Request` - некорректные входные данные
 - `500 Internal Server Error` - внутренняя ошибка сервера
 
-### Эндпоинт: `GET /api/v1/notes`
+### Эндпоинт: [GET /notes](http://arbond.ru/go/11/notes)
 
 Получение списка всех заметок.
 
-**URL:** `http://localhost:8080/api/v1/notes`
+**URL:** `http://arbond.ru/go/11/notes`
 
 **Успешный ответ (200 OK):**
 ```json
@@ -256,11 +248,11 @@ func main() {
 ]
 ```
 
-### Эндпоинт: `GET /api/v1/notes/{id}`
+### Эндпоинт: [GET /notes/{id}](http://arbond.ru/go/11/notes/{id})
 
 Получение заметки по ID.
 
-**URL:** `http://localhost:8080/api/v1/notes/1`
+**URL:** `http://arbond.ru/go/11/notes/1`
 
 **Успешный ответ (200 OK):**
 ```json
@@ -276,11 +268,11 @@ func main() {
 **Ошибки:**
 - `404 Not Found` - заметка не найдена
 
-### Эндпоинт: `PATCH /api/v1/notes/{id}`
+### Эндпоинт: [PATCH /notes/{id}](http://arbond.ru/go/11/notes/{id})
 
 Обновление существующей заметки.
 
-**URL:** `http://localhost:8080/api/v1/notes/1`
+**URL:** `http://arbond.ru/go/11/notes/1`
 
 **Тело запроса (JSON):**
 ```json
@@ -304,11 +296,11 @@ func main() {
 **Ошибки:**
 - `404 Not Found` - заметка не найдена
 
-### Эндпоинт: `DELETE /api/v1/notes/{id}`
+### Эндпоинт: [DELETE /notes/{id}](http://arbond.ru/go/11/notes/{id})
 
 Удаление заметки.
 
-**URL:** `http://localhost:8080/api/v1/notes/1`
+**URL:** `http://arbond.ru/go/11/notes/1`
 
 **Успешный ответ:** `204 No Content`
 
@@ -317,30 +309,12 @@ func main() {
 
 ---
 
-## Запуск приложения
-
-### Установка зависимостей
-
-```bash
-go mod tidy
-```
-
-### Запуск сервера
-
-```bash
-go run ./cmd/api
-```
-
-Сервер будет доступен по адресу: `http://localhost:8080`
-
----
-
 ## Тестирование
 
 ### Создание заметки
 
 ```bash
-curl -X POST http://localhost:8080/api/v1/notes \
+curl -X POST http://arbond.ru/go/11/notes \
   -H "Content-Type: application/json" \
   -d '{"title":"Первая заметка","content":"Это тестовая заметка"}'
 ```
@@ -359,7 +333,7 @@ curl -X POST http://localhost:8080/api/v1/notes \
 ### Получение всех заметок
 
 ```bash
-curl -X GET http://localhost:8080/api/v1/notes
+curl -X GET http://arbond.ru/go/11/notes
 ```
 
 **Ответ:**
@@ -378,7 +352,7 @@ curl -X GET http://localhost:8080/api/v1/notes
 ### Получение конкретной заметки
 
 ```bash
-curl -X GET http://localhost:8080/api/v1/notes/1
+curl -X GET http://arbond.ru/go/11/notes/1
 ```
 
 **Ответ:**
@@ -395,7 +369,7 @@ curl -X GET http://localhost:8080/api/v1/notes/1
 ### Обновление заметки
 
 ```bash
-curl -X PATCH http://localhost:8080/api/v1/notes/1 \
+curl -X PATCH http://arbond.ru/go/11/notes/1 \
   -H "Content-Type: application/json" \
   -d '{"title":"Обновленный заголовок","content":"Обновленное содержание"}'
 ```
@@ -414,7 +388,7 @@ curl -X PATCH http://localhost:8080/api/v1/notes/1 \
 ### Удаление заметки
 
 ```bash
-curl -X DELETE http://localhost:8080/api/v1/notes/1
+curl -X DELETE http://arbond.ru/go/11/notes/1
 ```
 
 **Ответ:** `204 No Content`
@@ -424,7 +398,7 @@ curl -X DELETE http://localhost:8080/api/v1/notes/1
 #### Создание заметки без заголовка
 
 ```bash
-curl -X POST http://localhost:8080/api/v1/notes \
+curl -X POST http://arbond.ru/go/11/notes \
   -H "Content-Type: application/json" \
   -d '{"content":"Заметка без заголовка"}'
 ```
@@ -434,7 +408,7 @@ curl -X POST http://localhost:8080/api/v1/notes \
 #### Получение несуществующей заметки
 
 ```bash
-curl -X GET http://localhost:8080/api/v1/notes/999
+curl -X GET http://arbond.ru/go/11/notes/999
 ```
 
 **Ответ:** `404 Not Found`
@@ -443,12 +417,12 @@ curl -X GET http://localhost:8080/api/v1/notes/999
 
 ## Заключение
 
-В ходе практической работы успешно реализовано REST API для управления заметками с полным CRUD-функционалом. Основные достижения:
+В ходе практической работы успешно реализовано REST API
+для управления заметками с полным CRUD-функционалом. Основные достижения:
 
-- **Спроектирована чистая архитектура** с четким разделением на слои (handler → service → repository)
+- **Спроектирована чистая архитектура** с четким разделением на слои (handler -> service -> repository)
 - **Реализованы все CRUD операции** для сущности "Заметка"
 - **Обеспечена корректная обработка ошибок** с соответствующими HTTP-статусами
 - **Реализовано потокобезопасное in-memory хранилище**
 - **Подготовлена основа** для дальнейшего расширения (база данных, аутентификация)
 
-Приложение демонстрирует лучшие практики разработки REST API на Go и может служить шаблоном для создания более сложных веб-сервисов. Архитектура проекта позволяет легко добавлять новые функции и модифицировать существующие без нарушения работы системы.
