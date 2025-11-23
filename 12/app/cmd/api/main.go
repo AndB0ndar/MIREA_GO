@@ -31,7 +31,7 @@ func main() {
 
 	// router.Get("/docs/*", httpSwagger.WrapHandler)
 	router.Get("/docs/*", httpSwagger.Handler(
-		httpSwagger.URL("/docs/swagger.json"),
+		httpSwagger.URL("swagger.json"),
 	))
 	router.Get("/docs/swagger.json", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "docs/swagger.json")
