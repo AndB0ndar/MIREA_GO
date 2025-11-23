@@ -397,11 +397,7 @@ curl -X POST http://arbond.ru/go/10/login \
   -d '{"email":"admin@example.com","password":"secret123"}'
 ```
 
-Ответ:
-
-```json
-{"access_token":"eyJhbGci...","refresh_token":"eyJhbGci..."}
-```
+![admin-reg](./img/admin-reg.png)
 
 #### Логин обычного пользователя
 
@@ -411,6 +407,8 @@ curl -X POST http://arbond.ru/go/10/login \
   -d '{"email":"user@example.com","password":"secret123"}'
 ```
 
+![user-reg](./img/user-reg.png)
+
 #### Получение профиля
 
 ```bash
@@ -418,11 +416,7 @@ curl -H "Authorization: Bearer ACCESS_TOKEN" \
   http://arbond.ru/go/10/me
 ```
 
-Ответ:
-
-```json
-{"id":1,"email":"admin@example.com","role":"admin"}
-```
+![profile](./img/profile.png)
 
 #### Доступ к админской статистике
 
@@ -431,23 +425,24 @@ curl -H "Authorization: Bearer ADMIN_TOKEN" \
   http://arbond.ru/go/10/admin/stats
 ```
 
-Ответ:
-
-```json
-{"users":3,"version":"1.0","stats":"Administrative statistics here"}
-```
+![admin-stat](./img/admin-stat.png)
 
 #### Тестирование ABAC правил
 
+user пытается получить свои данные:
 ```bash
-# user пытается получить свои данные - успех
 curl -H "Authorization: Bearer USER_TOKEN" \
   http://arbond.ru/go/10/users/2
+```
 
-# user пытается получить чужие данные - ошибка 403
+![user-get](./img/user-get.png)
+
+user пытается получить чужие данные:
+```bash
 curl -H "Authorization: Bearer USER_TOKEN" \
   http://arbond.ru/go/10/users/1
 ```
+![user-get-bad](./img/user-get-bad.png)
 
 #### Обновление токенов
 
@@ -457,6 +452,8 @@ curl -X POST http://arbond.ru/go/10/refresh \
   -d '{"refresh_token":"REFRESH_TOKEN"}'
 ```
 
+![token-update](./img/token-update.png)
+
 ### Тестирование безопасности
 
 #### Попытка доступа без токена
@@ -465,7 +462,7 @@ curl -X POST http://arbond.ru/go/10/refresh \
 curl -i http://arbond.ru/go/10/me
 ```
 
-Ответ: `401 Unauthorized`
+![access-without-token](./img/access-without-token.png)
 
 #### Попытка доступа с неверной ролью
 
@@ -474,78 +471,7 @@ curl -H "Authorization: Bearer USER_TOKEN" \
   http://arbond.ru/go/10/admin/stats
 ```
 
-Ответ: `403 Forbidden`
-
-#### Использование просроченного токена
-
-```bash
-# После истечения 15 минут
-curl -H "Authorization: Bearer EXPIRED_TOKEN" \
-  http://arbond.ru/go/10/me
-```
-
-Ответ: `401 Unauthorized`
-
----
-
-## Примеры работающих запросов
-
-### 1. Успешная аутентификация
-
-**Запрос:**
-
-```bash
-curl -X POST http://arbond.ru/go/10/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"admin@example.com","password":"secret123"}'
-```
-
-**Ответ:**
-
-```json
-{
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-}
-```
-
-### 2. Получение профиля пользователя
-
-**Запрос:**
-
-```bash
-curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
-  http://arbond.ru/go/10/me
-```
-
-**Ответ:**
-
-```json
-{
-  "id": 1,
-  "email": "admin@example.com",
-  "role": "admin"
-}
-```
-
-### 3. Административная статистика
-
-**Запрос:**
-
-```bash
-curl -H "Authorization: Bearer ADMIN_TOKEN" \
-  http://arbond.ru/go/10/admin/stats
-```
-
-**Ответ:**
-
-```json
-{
-  "users": 3,
-  "version": "1.0",
-  "stats": "Administrative statistics here"
-}
-```
+![access-bad-role](./img/access-bad-role.png)
 
 ---
 

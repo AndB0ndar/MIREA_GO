@@ -193,7 +193,7 @@ func NewRouter(h *handlers.Handler) *chi.Mux {
 
 ## Документация API эндпоинтов
 
-### Swagger UI: `GET /docs`
+### Swagger UI: [GET /docs](http://arbond.ru/go/12/docs/index.html)
 
 Интерактивная документация API.
 
@@ -299,97 +299,6 @@ curl http://arbond.ru/go/12/notes
 # Документация доступна по адресу
 open http://arbond.ru/go/12/docs/index.html
 ```
-
----
-
-## Тестирование
-
-### Генерация документации
-
-```bash
-make swagger
-```
-**Результат:**
-```
-2024/01/15 10:40:12 Generate swagger docs....
-2024/01/15 10:40:12 Generate general API Info, search dir: ./
-2024/01/15 10:40:12 create docs.go at docs/docs.go
-2024/01/15 10:40:12 create swagger.json at docs/swagger.json
-2024/01/15 10:40:12 create swagger.yaml at docs/swagger.yaml
-```
-
-### Проверка сгенерированных файлов
-
-```bash
-ls -la docs/
-```
-**Результат:**
-```
-docs.go
-swagger.json
-swagger.yaml
-```
-
-### Тестирование Swagger UI
-
-1. **Открытие документации:**
-   ```bash
-   make all
-   # Перейти по адресу http://arbond.ru/go/12/docs/index.html
-   ```
-
-2. **Тест создания заметки через Swagger UI:**
-   - Открыть раздел "POST /notes"
-   - Нажать "Try it out"
-   - Ввести данные:
-     ```json
-     {
-       "title": "Тестовая заметка",
-       "content": "Создана через Swagger UI"
-     }
-     ```
-   - Нажать "Execute"
-
-3. **Проверка ответа:**
-   **Успешный ответ (201):**
-   ```json
-   {
-     "id": 1,
-     "title": "Тестовая заметка",
-     "content": "Создана через Swagger UI",
-     "createdAt": "2025-01-15T10:30:45.123Z",
-     "updatedAt": null
-   }
-   ```
-
-4. **Тест получения всех заметок:**
-   - Раздел "GET /notes"
-   - "Try it out" → "Execute"
-   **Результат:**
-   ```json
-   [
-     {
-       "id": 1,
-       "title": "Тестовая заметка",
-       "content": "Создана через Swagger UI",
-       "createdAt": "2025-01-15T10:30:45.123Z",
-       "updatedAt": null
-     }
-   ]
-   ```
-
-5. **Тестирование ошибок:**
-   - Создание заметки без заголовка → 400 Bad Request
-   - Получение несуществующей заметки → 404 Not Found
-
-![Swagger UI Главная страница](./img/swagger-main.png)
-*Главная страница Swagger UI с описанием API*
-
-![Swagger UI Методы Notes](./img/swagger-methods.png)
-*Список доступных методов для работы с заметками*
-
-![Swagger UI Пример запроса](./img/swagger-request.png)
-*Пример тестового запроса создания заметки*
 
 ---
 

@@ -92,11 +92,46 @@ jobs:
         go build -v -o ${{ matrix.dir }}-app ./cmd/server
         ls -la
 
+    - name: Check for Swagger support
+      id: check_swagger
+      run: |
+        cd ${{ matrix.dir }}/app
+        
+        if [ -f "./cmd/server/main.go" ] && grep -q "swagger" ./cmd/server/main.go; then
+          echo "has_swagger=true" >> $GITHUB_OUTPUT
+        else
+          echo "has_swagger=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Install Swagger CLI
+      if: steps.check_swagger.outputs.has_swagger == 'true'
+      run: |
+        go install github.com/swaggo/swag/cmd/swag@latest
+
+    - name: Generate Swagger documentation
+      if: steps.check_swagger.outputs.has_swagger == 'true'
+      run: |
+        cd ${{ matrix.dir }}/app
+        elif [ -f "./cmd/server/main.go" ]; then
+          ENTRY_POINT="cmd/server/main.go"
+        else
+          exit 0
+        fi
+        
+        echo "Generating Swagger from $ENTRY_POINT"
+        swag init -g $ENTRY_POINT -o docs
+        echo "Swagger docs generated:"
+        ls -la docs/
+
     - name: Create deployment package
       run: |
         mkdir -p deploy-${{ matrix.dir }}
 
         cp ${{ matrix.dir }}/app/${{ matrix.dir }}-app deploy-${{ matrix.dir }}/
+
+        if [ "${{ steps.check_swagger.outputs.has_swagger }}" = "true" ] && [ -d "${{ matrix.dir }}/app/docs" ]; then
+          cp -r ${{ matrix.dir }}/app/docs deploy-${{ matrix.dir }}/
+        fi
         
         tar -czf deploy-${{ matrix.dir }}.tar.gz -C deploy-${{ matrix.dir }} .
         echo "Archive contents:"

@@ -5,6 +5,7 @@
 ## Описание
 
 **Цели:**
+
 - Освоить принципы проектирования REST API.
 - Научиться разрабатывать структуру проекта backend-приложения на Go.
 - Спроектировать и реализовать CRUD-интерфейс для сущности "Заметка".
@@ -59,27 +60,32 @@ app
 **Ключевые компоненты:**
 
 1. **Структура Note:**
-```go
-type Note struct {
+   
+   ```go
+   type Note struct {
     ID        int64      `json:"id"`
     Title     string     `json:"title"`
     Content   string     `json:"content"`
     CreatedAt time.Time  `json:"createdAt"`
     UpdatedAt *time.Time `json:"updatedAt,omitempty"`
-}
-```
-Основная сущность приложения с JSON-тегами для сериализации.
+   }
+   ```
+   
+   Основная сущность приложения с JSON-тегами для сериализации.
 
 2. **Структура NoteRequest:**
-```go
-type NoteRequest struct {
+   
+   ```go
+   type NoteRequest struct {
     Title   string `json:"title"`
     Content string `json:"content"`
-}
-```
-DTO для входящих запросов на создание/обновление заметок.
+   }
+   ```
+   
+   DTO для входящих запросов на создание/обновление заметок.
 
 **Архитектурное значение:**
+
 - Определяет доменную модель приложения
 - Отделяет структуры данных от транспортного уровня
 - Обеспечивает согласованность данных между слоями
@@ -91,26 +97,30 @@ DTO для входящих запросов на создание/обновл�
 **Ключевые компоненты:**
 
 1. **Интерфейс NoteRepository:**
-```go
-type NoteRepository interface {
+   
+   ```go
+   type NoteRepository interface {
     Create(note Note) (int64, error)
     GetByID(id int64) (*Note, error)
     GetAll() ([]*Note, error)
     Update(id int64, updated Note) error
     Delete(id int64) error
-}
-```
-Абстракция для работы с данными, позволяющая легко менять реализацию хранилища.
+   }
+   ```
+   
+   Абстракция для работы с данными, позволяющая легко менять реализацию хранилища.
 
 2. **In-memory реализация:**
-```go
-type NoteRepoMem struct {
+   
+   ```go
+   type NoteRepoMem struct {
     mu     sync.RWMutex
     notes  map[int64]*Note
     nextID int64
-}
-```
-Потокобезопасная реализация с использованием sync.RWMutex для конкурентного доступа.
+   }
+   ```
+   
+   Потокобезопасная реализация с использованием sync.RWMutex для конкурентного доступа.
 
 3. **CRUD операции:**
 - `Create()` - создание новой заметки с автоинкрементом ID
@@ -120,6 +130,7 @@ type NoteRepoMem struct {
 - `Delete()` - удаление заметки
 
 **Архитектурное значение:**
+
 - Инкапсулирует логику работы с данными
 - Предоставляет абстракцию для легкой замены хранилища
 - Обеспечивает потокобезопасность
@@ -131,24 +142,30 @@ type NoteRepoMem struct {
 **Ключевые компоненты:**
 
 1. **Структура Handler:**
-```go
-type Handler struct {
+   
+   ```go
+   type Handler struct {
     Repo NoteRepository
-}
-```
-Инкапсулирует зависимости обработчиков.
+   }
+   ```
+   
+   Инкапсулирует зависимости обработчиков.
 
 2. **CRUD эндпоинты:**
 - `CreateNote()` - POST /api/v1/notes
-- `GetAllNotes()` - GET /api/v1/notes  
-- `GetNote()` - GET /api/v1/notes/{id}
-- `UpdateNote()` - PATCH /api/v1/notes/{id}
-- `DeleteNote()` - DELETE /api/v1/notes/{id}
 
+- `GetAllNotes()` - GET /api/v1/notes  
+
+- `GetNote()` - GET /api/v1/notes/{id}
+
+- `UpdateNote()` - PATCH /api/v1/notes/{id}
+
+- `DeleteNote()` - DELETE /api/v1/notes/{id}
 3. **Обработка ошибок:**
-Каждый обработчик корректно обрабатывает различные сценарии ошибок с соответствующими HTTP-статусами.
+   Каждый обработчик корректно обрабатывает различные сценарии ошибок с соответствующими HTTP-статусами.
 
 **Архитектурное значение:**
+
 - Отделяет транспортный уровень от бизнес-логики
 - Обрабатывает HTTP-специфичные аспекты (коды ответов, заголовки)
 - Валидирует входящие данные
@@ -162,7 +179,7 @@ type Handler struct {
 ```go
 func NewRouter(h *handlers.Handler) *chi.Mux {
     r := chi.NewRouter()
-    
+
     r.Route("/api/v1/notes", func(r chi.Router) {
         r.Post("/", h.CreateNote)
         r.Get("/", h.GetAllNotes)
@@ -170,12 +187,13 @@ func NewRouter(h *handlers.Handler) *chi.Mux {
         r.Patch("/{id}", h.UpdateNote)
         r.Delete("/{id}", h.DeleteNote)
     })
-    
+
     return r
 }
 ```
 
 **Архитектурное значение:**
+
 - Централизованная конфигурация маршрутов
 - Чистое разделение ответственности
 
@@ -192,6 +210,7 @@ router := httpx.NewRouter(handler)
 ```
 
 **Архитектурное значение:**
+
 - Композиция зависимостей (Dependency Injection)
 - Централизованная точка запуска приложения
 - Обработка ошибок запуска
@@ -207,6 +226,7 @@ router := httpx.NewRouter(handler)
 **URL:** `http://arbond.ru/go/11/notes`
 
 **Тело запроса (JSON):**
+
 ```json
 {
     "title": "Заголовок заметки",
@@ -215,6 +235,7 @@ router := httpx.NewRouter(handler)
 ```
 
 **Успешный ответ (201 Created):**
+
 ```json
 {
     "id": 1,
@@ -226,6 +247,7 @@ router := httpx.NewRouter(handler)
 ```
 
 **Ошибки:**
+
 - `400 Bad Request` - некорректные входные данные
 - `500 Internal Server Error` - внутренняя ошибка сервера
 
@@ -236,6 +258,7 @@ router := httpx.NewRouter(handler)
 **URL:** `http://arbond.ru/go/11/notes`
 
 **Успешный ответ (200 OK):**
+
 ```json
 [
     {
@@ -255,6 +278,7 @@ router := httpx.NewRouter(handler)
 **URL:** `http://arbond.ru/go/11/notes/1`
 
 **Успешный ответ (200 OK):**
+
 ```json
 {
     "id": 1,
@@ -266,6 +290,7 @@ router := httpx.NewRouter(handler)
 ```
 
 **Ошибки:**
+
 - `404 Not Found` - заметка не найдена
 
 ### Эндпоинт: [PATCH /notes/{id}](http://arbond.ru/go/11/notes/{id})
@@ -275,6 +300,7 @@ router := httpx.NewRouter(handler)
 **URL:** `http://arbond.ru/go/11/notes/1`
 
 **Тело запроса (JSON):**
+
 ```json
 {
     "title": "Обновленный заголовок",
@@ -283,6 +309,7 @@ router := httpx.NewRouter(handler)
 ```
 
 **Успешный ответ (200 OK):**
+
 ```json
 {
     "id": 1,
@@ -294,6 +321,7 @@ router := httpx.NewRouter(handler)
 ```
 
 **Ошибки:**
+
 - `404 Not Found` - заметка не найдена
 
 ### Эндпоинт: [DELETE /notes/{id}](http://arbond.ru/go/11/notes/{id})
@@ -305,6 +333,7 @@ router := httpx.NewRouter(handler)
 **Успешный ответ:** `204 No Content`
 
 **Ошибки:**
+
 - `404 Not Found` - заметка не найдена
 
 ---
@@ -319,16 +348,7 @@ curl -X POST http://arbond.ru/go/11/notes \
   -d '{"title":"Первая заметка","content":"Это тестовая заметка"}'
 ```
 
-**Ответ:**
-```json
-{
-  "id": 1,
-  "title": "Первая заметка",
-  "content": "Это тестовая заметка",
-  "createdAt": "2025-01-15T10:30:45.123Z",
-  "updatedAt": null
-}
-```
+![create](./img/create.png)
 
 ### Получение всех заметок
 
@@ -336,18 +356,7 @@ curl -X POST http://arbond.ru/go/11/notes \
 curl -X GET http://arbond.ru/go/11/notes
 ```
 
-**Ответ:**
-```json
-[
-  {
-    "id": 1,
-    "title": "Первая заметка",
-    "content": "Это тестовая заметка",
-    "createdAt": "2025-01-15T10:30:45.123Z",
-    "updatedAt": null
-  }
-]
-```
+![get](./img/get.png)
 
 ### Получение конкретной заметки
 
@@ -355,16 +364,7 @@ curl -X GET http://arbond.ru/go/11/notes
 curl -X GET http://arbond.ru/go/11/notes/1
 ```
 
-**Ответ:**
-```json
-{
-  "id": 1,
-  "title": "Первая заметка",
-  "content": "Это тестовая заметка",
-  "createdAt": "2025-01-15T10:30:45.123Z",
-  "updatedAt": null
-}
-```
+![get-note](./img/get-note.png)
 
 ### Обновление заметки
 
@@ -374,16 +374,7 @@ curl -X PATCH http://arbond.ru/go/11/notes/1 \
   -d '{"title":"Обновленный заголовок","content":"Обновленное содержание"}'
 ```
 
-**Ответ:**
-```json
-{
-  "id": 1,
-  "title": "Обновленный заголовок",
-  "content": "Обновленное содержание",
-  "createdAt": "2025-01-15T10:30:45.123Z",
-  "updatedAt": "2025-01-15T10:35:22.456Z"
-}
-```
+![update](./img/update.png)
 
 ### Удаление заметки
 
@@ -391,9 +382,9 @@ curl -X PATCH http://arbond.ru/go/11/notes/1 \
 curl -X DELETE http://arbond.ru/go/11/notes/1
 ```
 
-**Ответ:** `204 No Content`
+![delete](./img/delete.png)
 
-### Тестирование ошибок
+### Ошибки
 
 #### Создание заметки без заголовка
 
@@ -403,7 +394,7 @@ curl -X POST http://arbond.ru/go/11/notes \
   -d '{"content":"Заметка без заголовка"}'
 ```
 
-**Ответ:** `400 Bad Request`
+![create-bad](./img/create-bad.png)
 
 #### Получение несуществующей заметки
 
@@ -411,7 +402,8 @@ curl -X POST http://arbond.ru/go/11/notes \
 curl -X GET http://arbond.ru/go/11/notes/999
 ```
 
-**Ответ:** `404 Not Found`
+![get-bad](./img/get-bad.png)
+![get-bad-list](./img/get-bad-list.png)
 
 ---
 
@@ -425,4 +417,3 @@ curl -X GET http://arbond.ru/go/11/notes/999
 - **Обеспечена корректная обработка ошибок** с соответствующими HTTP-статусами
 - **Реализовано потокобезопасное in-memory хранилище**
 - **Подготовлена основа** для дальнейшего расширения (база данных, аутентификация)
-
