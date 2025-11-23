@@ -22,7 +22,7 @@ import (
 	"app/internal/repo"
 )
 
-// @host localhost:8080
+// @host arbond.ru/go/12
 // @schemes http
 func main() {
 	cfg := config.Load()
