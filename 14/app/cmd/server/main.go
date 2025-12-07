@@ -1,11 +1,11 @@
 // Package main Notes API server.
 //
-// @title Notes API (Unix Socket)
+// @title Notes API
 // @version 2.0
 // @description Учебный REST API для управления заметками.
 // @contact.name Andrey Bondar
 // @contact.email andrey.bondar.2003@list.ru
-// @BasePath /
+// @BasePath /go/14
 package main
 
 import (
@@ -26,7 +26,7 @@ import (
 	"app/internal/repo"
 )
 
-// @host localhost
+// @host arbond.ru
 // @schemes http
 func main() {
 	// Инициализация логгера
