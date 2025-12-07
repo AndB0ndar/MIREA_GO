@@ -1,0 +1,416 @@
+basePath: /
+definitions:
+  core.ErrorResponse:
+    properties:
+      code:
+        example: 400
+        type: integer
+      error:
+        example: Error message
+        type: string
+      message:
+        example: Detailed error message
+        type: string
+    type: object
+  core.ExplainResponse:
+    properties:
+      explanation:
+        type: string
+      query:
+        type: string
+    type: object
+  core.Note:
+    properties:
+      content:
+        example: Содержание заметки
+        type: string
+      createdAt:
+        example: "2025-01-15T10:30:00Z"
+        type: string
+      id:
+        example: 1
+        type: integer
+      title:
+        example: Моя заметка
+        type: string
+      updatedAt:
+        example: "2025-01-15T11:00:00Z"
+        type: string
+    type: object
+  core.NoteCreate:
+    properties:
+      content:
+        example: Текст заметки
+        type: string
+      title:
+        example: Новая заметка
+        type: string
+    type: object
+  core.NoteUpdate:
+    properties:
+      content:
+        example: Обновленное содержание
+        type: string
+      title:
+        example: Обновленный заголовок
+        type: string
+    type: object
+  core.SuccessResponse:
+    properties:
+      limit:
+        type: integer
+      notes:
+        items:
+          $ref: '#/definitions/core.Note'
+        type: array
+      offset:
+        type: integer
+      total:
+        type: integer
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: andrey.bondar.2003@list.ru
+    name: Andrey Bondar
+  description: Учебный REST API для управления заметками.
+  title: Notes API (PostgreSQL)
+  version: "2.0"
+paths:
+  /notes:
+    get:
+      description: Возвращает список всех заметок
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/core.Note'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Получить все заметки
+      tags:
+      - notes
+    post:
+      consumes:
+      - application/json
+      description: Создает новую заметку
+      parameters:
+      - description: Данные новой заметки
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/core.NoteCreate'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/core.Note'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Создать заметку
+      tags:
+      - notes
+  /notes/{id}:
+    delete:
+      description: Удаляет заметку по указанному идентификатору
+      parameters:
+      - description: ID заметки
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Удалить заметку
+      tags:
+      - notes
+    get:
+      description: Возвращает заметку по указанному идентификатору
+      parameters:
+      - description: ID заметки
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/core.Note'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Получить заметку по ID
+      tags:
+      - notes
+    patch:
+      consumes:
+      - application/json
+      description: Обновляет существующую заметку (частичное обновление)
+      parameters:
+      - description: ID заметки
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Поля для обновления
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/core.NoteUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/core.Note'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Обновить заметку
+      tags:
+      - notes
+  /notes/batch:
+    get:
+      description: Возвращает заметки по списку ID (батчинг)
+      parameters:
+      - description: Список ID через запятую
+        in: query
+        name: ids
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/core.Note'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Получить несколько заметок за один запрос
+      tags:
+      - notes
+  /notes/explain:
+    get:
+      description: Показать план выполнения SQL запроса (только для администраторов)
+      parameters:
+      - description: SQL запрос для анализа
+        in: query
+        name: query
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/core.ExplainResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/core.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/core.ErrorResponse'
+      summary: Выполнить EXPLAIN ANALYZE для запроса
+      tags:
+      - notes
+  /notes/offset:
+    get:
+      description: Возвращает заметки с использованием OFFSET/LIMIT (неоптимизированно)
+      parameters:
+      - default: 10
+        description: Количество записей
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Смещение
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/core.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/core.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/core.ErrorResponse'
+      summary: Получить заметки с OFFSET пагинацией
+      tags:
+      - notes
+  /notes/paginated:
+    get:
+      description: Возвращает заметки с использованием keyset-пагинации
+      parameters:
+      - description: ID последней заметки на предыдущей странице
+        in: query
+        name: last_id
+        type: integer
+      - default: 10
+        description: Количество записей
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/core.Note'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Получить заметки с keyset-пагинацией
+      tags:
+      - notes
+  /notes/search:
+    get:
+      description: Поиск с использованием полнотекстового индекса
+      parameters:
+      - description: Поисковый запрос
+        in: query
+        name: q
+        required: true
+        type: string
+      - default: 10
+        description: Количество результатов
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/core.Note'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Поиск заметок по заголовку
+      tags:
+      - notes
+schemes:
+- http
+swagger: "2.0"
