@@ -97,7 +97,8 @@ jobs:
       run: |
         cd ${{ matrix.dir }}/app
         
-        if [ -f "./cmd/server/main.go" ] && grep -q "swagger" ./cmd/server/main.go; then
+        if ([ -f "./cmd/server/main.go" ] && grep -q "swagger" ./cmd/server/main.go) || \
+          ([ -f "./internal/http/router.go" ] && grep -q "swagger" ./internal/http/router.go) ; then
           echo "has_swagger=true" >> $GITHUB_OUTPUT
         else
           echo "has_swagger=false" >> $GITHUB_OUTPUT
@@ -153,6 +154,7 @@ jobs:
         SOCKET_PATH: ${{ secrets.REMOTE_PATH }}/${{ matrix.dir }}/${{ matrix.dir }}.sock
         POSTGRESQL_URL: ${{ secrets.POSTGRESQL_URL }}
         POSTGRESQL_DSN: ${{ secrets.POSTGRESQL_DSN }}
+        NOTES_POSTGRESQL_URL: ${{ secrets.NOTES_POSTGRESQL_URL }}
         MONGO_URL: ${{ secrets.MONGO_URL }}
         MONGO_DSN: ${{ secrets.MONGO_DSN }}
         REDIS_HOST: ${{ secrets.REDIS_HOST }}
@@ -161,7 +163,7 @@ jobs:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
-        envs: SOCKET_PATH,POSTGRESQL_URL,POSTGRESQL_DSN,MONGO_URL,MONGO_DSN,REDIS_HOST,SECRET
+        envs: SOCKET_PATH,POSTGRESQL_URL,POSTGRESQL_DSN,NOTES_POSTGRESQL_URL,MONGO_URL,MONGO_DSN,REDIS_HOST,SECRET
         script: |
           cd ${{ secrets.REMOTE_PATH }}
           
