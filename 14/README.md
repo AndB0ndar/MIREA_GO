@@ -15,7 +15,9 @@
 
 ## Миграция с in-memory на PostgreSQL
 
-В рамках данной работы была выполнена миграция с in-memory хранилища на PostgreSQL с полным перепроектированием архитектуры приложения для оптимизации производительности.
+В рамках данной работы была выполнена миграция с in-memory хранилища
+на PostgreSQL с полным перепроектированием архитектуры приложения
+для оптимизации производительности.
 
 ### Изменения в структуре проекта
 
@@ -83,6 +85,7 @@ func InitPostgres(cfg config.DatabaseConfig) error {
 ```
 
 **Архитектурное значение:**
+
 - Управление переиспользованием соединений
 - Предотвращение исчерпания лимитов подключений БД
 - Оптимальное распределение ресурсов
@@ -92,7 +95,6 @@ func InitPostgres(cfg config.DatabaseConfig) error {
 **Файл:** `init.sql`
 
 ```sql
--- B-Tree индекс для первичного ключа (автоматически)
 CREATE TABLE IF NOT EXISTS notes (
     id BIGSERIAL PRIMARY KEY,
     title TEXT NOT NULL,
@@ -103,7 +105,7 @@ CREATE TABLE IF NOT EXISTS notes (
 
 -- GIN индекс для полнотекстового поиска по заголовку
 CREATE INDEX IF NOT EXISTS idx_notes_title_gin
-ON notes USING GIN (to_tsvector('simple', title));
+    ON notes USING GIN (to_tsvector('simple', title));
 
 -- Составной индекс для keyset-пагинации
 CREATE INDEX IF NOT EXISTS idx_notes_created_id ON notes (created_at, id);
@@ -115,23 +117,28 @@ CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
 ### 3. Keyset-пагинация (Cursor-based pagination)
 
 **Проблема OFFSET/LIMIT:**
+
+Медленно при больших смещениях.
+
 ```sql
--- Медленно при больших смещениях
 SELECT * FROM notes 
-ORDER BY created_at DESC, id DESC 
-OFFSET 1000 LIMIT 10;
+    ORDER BY created_at DESC, id DESC 
+    OFFSET 1000 LIMIT 10;
 ```
 
 **Решение Keyset-пагинации:**
+
+Быстро на любых объёмах данных.
+
 ```sql
--- Быстро на любых объёмах данных
 SELECT * FROM notes 
-WHERE (created_at, id) < (?, ?)
-ORDER BY created_at DESC, id DESC 
-LIMIT 10;
+    WHERE (created_at, id) < (?, ?)
+    ORDER BY created_at DESC, id DESC 
+    LIMIT 10;
 ```
 
 **Реализация в репозитории:**
+
 ```go
 func (r *NoteRepoPG) GetPaginated(lastID int64, limit int) ([]*core.Note, error) {
     var query string
@@ -148,16 +155,20 @@ func (r *NoteRepoPG) GetPaginated(lastID int64, limit int) ([]*core.Note, error)
 ### 4. Батчинг запросов (решение проблемы N+1)
 
 **Проблема N+1:**
+
+Данный код выполняет каждый запрос к базе данных отдельно.
+
 ```go
-// 10 отдельных запросов к БД
 for _, id := range ids {
     note, _ := repo.GetByID(id)
 }
 ```
 
 **Решение батчингом:**
+
+Решение той же задачи, но за один запрос. 
+
 ```go
-// 1 запрос к БД
 func (r *NoteRepoPG) GetBatch(ids []int64) ([]*core.Note, error) {
     query := `SELECT ... FROM notes WHERE id = ANY($1)`
     rows, err := database.Pool.Query(r.ctx, query, ids)
@@ -167,11 +178,13 @@ func (r *NoteRepoPG) GetBatch(ids []int64) ([]*core.Note, error) {
 ### 5. Подготовленные запросы (Prepared Statements)
 
 **Реализация:**
+
+Автоматически использует prepared statements,
+а также подготовка и кэширование плана запроса.
+
 ```go
-// pgx автоматически использует prepared statements
 func (r *NoteRepoPG) GetByID(id int64) (*core.Note, error) {
     query := `SELECT ... FROM notes WHERE id = $1`
-    // Автоматическая подготовка и кэширование плана запроса
     err := database.Pool.QueryRow(r.ctx, query, id).Scan(...)
 }
 ```
@@ -180,20 +193,25 @@ func (r *NoteRepoPG) GetByID(id int64) (*core.Note, error) {
 
 ## Новые эндпоинты API
 
-### Эндпоинт: `GET /notes/paginated`
+**Swagger:** http://arbond.ru/go/14/docs/index.html
+
+### Эндпоинт: [GET /notes/paginated](http://arbond.ru/go/14/notes/paginated)
 
 Keyset-пагинация с использованием составного индекса.
 
 **Параметры:**
+
 - `last_id` - ID последней заметки на предыдущей странице (опционально)
 - `limit` - количество записей (по умолчанию 10)
 
 **Пример запроса:**
+
 ```bash
-curl "http://localhost:8080/notes/paginated?last_id=50&limit=10"
+curl "http://arbond.ru/go/14/notes/paginated?last_id=50&limit=10"
 ```
 
 **Ответ:**
+
 ```json
 [
   {
@@ -206,48 +224,55 @@ curl "http://localhost:8080/notes/paginated?last_id=50&limit=10"
 ]
 ```
 
-### Эндпоинт: `GET /notes/batch`
+### Эндпоинт: [GET /notes/batch](http://arbond.ru/go/14/notes/batch)
 
 Получение нескольких заметок за один запрос (батчинг).
 
 **Параметры:**
+
 - `ids` - список ID через запятую
 
 **Пример запроса:**
+
 ```bash
-curl "http://localhost:8080/notes/batch?ids=1,2,3,4,5"
+curl "http://arbond.ru/go/14/notes/batch?ids=1,2,3,4,5"
 ```
 
-### Эндпоинт: `GET /notes/search`
+### Эндпоинт: [GET /notes/search](http://arbond.ru/go/14/notes/search)
 
 Полнотекстовый поиск с использованием GIN индекса.
 
 **Параметры:**
+
 - `q` - поисковый запрос
 - `limit` - количество результатов
 
 **Пример запроса:**
+
 ```bash
-curl "http://localhost:8080/notes/search?q=важная&limit=5"
+curl "http://arbond.ru/go/14/notes/search?q=важная&limit=5"
 ```
 
-### Эндпоинт: `GET /notes/explain`
+### Эндпоинт: [GET /notes/explain](http://arbond.ru/go/14/notes/explain)
 
 Получение плана выполнения запроса (EXPLAIN ANALYZE).
 
 **Параметры:**
+
 - `query` - SQL запрос для анализа
 
 **Пример запроса:**
+
 ```bash
-curl "http://localhost:8080/notes/explain?query=SELECT%20*%20FROM%20notes%20WHERE%20id%20=%201"
+curl "http://arbond.ru/go/14/notes/explain?query=SELECT%20*%20FROM%20notes%20WHERE%20id%20=%201"
 ```
 
-### Эндпоинт: `GET /api/stats/db`
+### Эндпоинт: [GET /api/stats/db](http://arbond.ru/go/14/api/stats/db)
 
 Мониторинг состояния пула соединений.
 
 **Пример ответа:**
+
 ```json
 {
   "status": "ok",
@@ -259,103 +284,84 @@ curl "http://localhost:8080/notes/explain?query=SELECT%20*%20FROM%20notes%20WHER
 
 ## Результаты нагрузочного тестирования
 
-### Методология тестирования
-
-Для тестирования использовались инструменты:
-- `hey` - для нагрузочного тестирования HTTP
-- `pg_stat_statements` - для анализа запросов в БД
-- `EXPLAIN ANALYZE` - для анализа планов выполнения
-
 ### Тест 1: Сравнение OFFSET и Keyset пагинации
 
 **OFFSET пагинация (неоптимизированная):**
+
 ```bash
-hey -n 1000 -c 50 "http://localhost:8080/notes/offset?limit=10&offset=100"
+hey -n 1000 -c 50 "http://arbond.ru/go/14/notes/offset?limit=10&offset=100"
 ```
 
-**Результаты:**
-- Среднее время: 45.2 мс
-- P95: 120.5 мс  
-- P99: 210.3 мс
-- RPS: 850 запросов/сек
+![offset](./img/offset.png)
 
 **Keyset пагинация (оптимизированная):**
+
 ```bash
-hey -n 1000 -c 50 "http://localhost:8080/notes/paginated?limit=10&last_id=100"
+hey -n 1000 -c 50 "http://arbond.ru/go/14/notes/paginated?limit=10&last_id=100"
 ```
 
-**Результаты:**
-- Среднее время: 12.8 мс
-- P95: 25.4 мс
-- P99: 42.1 мс
-- RPS: 1850 запросов/сек
+![keyset](./img/keyset.png)
 
-**Улучшение:** ×3.5 в скорости, ×2.2 в пропускной способности
+**Улучшение:** x1.3 в скорости, x9.8 в пропускной способности
 
 ### Тест 2: Батчинг vs N+1 запросы
 
 **N+1 запросы (10 отдельных запросов):**
+
 ```bash
 for i in {1..10}; do
-  curl -s "http://localhost:8080/notes/$i" > /dev/null &
+  curl -s "http://arbond.ru/go/14/notes/$i" > /dev/null &
 done
 time wait
 ```
 
-**Результаты:** ~150 мс на 10 запросов
+![n1](./img/n1.png)
 
 **Батчинг (1 запрос):**
+
 ```bash
-hey -n 1000 -c 50 "http://localhost:8080/notes/batch?ids=1,2,3,4,5,6,7,8,9,10"
+hey -n 1000 -c 50 "http://arbond.ru/go/14/notes/batch?ids=1,2,3,4,5,6,7,8,9,10"
 ```
 
-**Результаты:**
-- Среднее время: 8.2 мс на 10 заметок
-- Улучшение: ×18 в скорости
+![batch](./img/batch.png)
 
 ### Тест 3: Поиск с GIN индексом
 
 ```bash
-hey -n 500 -c 20 "http://localhost:8080/notes/search?q=заметка&limit=10"
+hey -n 500 -c 20 "http://arbond.ru/go/14/notes/search?q=заметка&limit=10"
 ```
 
-**Результаты:**
-- Среднее время: 15.3 мс
-- Использование индекса: Index Scan (GIN)
+![gin](./img/gin.png)
 
 ### Анализ планов выполнения
 
 **OFFSET запрос (проблемный):**
-```
-EXPLAIN (ANALYZE, BUFFERS) 
-SELECT * FROM notes 
-ORDER BY created_at DESC, id DESC 
-OFFSET 100 LIMIT 10;
 
--- Результат:
-Sort  (cost=456.12..478.34 rows=8888) (actual time=12.456..14.321 rows=10)
-  ->  Seq Scan on notes  (cost=0.00..234.56 rows=8888)
 ```
+SELECT * FROM notes
+    ORDER BY created_at DESC, id DESC
+    OFFSET 100 LIMIT 10;
+```
+
+![explain-offset](./img/explain-offset.png)
 
 **Keyset запрос (оптимизированный):**
-```
-EXPLAIN (ANALYZE, BUFFERS)
-SELECT * FROM notes 
-WHERE (created_at, id) < ('2024-01-01', 100)
-ORDER BY created_at DESC, id DESC 
-LIMIT 10;
 
--- Результат:
-Limit  (cost=0.42..2.65 rows=10)
-  ->  Index Scan using idx_notes_created_id on notes
-        Index Cond: (ROW(created_at, id) < ROW('2024-01-01'::timestamp, 100))
 ```
+SELECT * FROM notes
+    WHERE (created_at, id) < ('2024-01-01', 100)
+    ORDER BY created_at DESC, id DESC
+    LIMIT 10;
+```
+
+![explain-keyset](./img/explain-keyset.png)
 
 ---
 
 ## Настройки пула соединений
 
 ### Конфигурация (производственная):
+
 ```go
 MaxOpenConns:    20    // CPU * 4 (для 4-ядерного сервера)
 MaxIdleConns:    10    // 50% от MaxOpenConns
@@ -364,8 +370,9 @@ ConnMaxIdleTime: 5m    // Закрытие неиспользуемых соед
 ```
 
 ### Мониторинг состояния пула:
+
 ```bash
-curl http://localhost:8080/api/stats/db
+curl http://arbond.ru/go/14/api/stats/db
 
 {
   "status": "ok",
@@ -373,45 +380,16 @@ curl http://localhost:8080/api/stats/db
 }
 ```
 
----
-
-## Выводы и рекомендации
-
-### Достигнутые результаты:
-
-1. **Производительность пагинации увеличена в 3.5 раза** за счет перехода с OFFSET на Keyset-пагинацию
-2. **Устранена проблема N+1 запросов** через внедрение батчинга (ускорение в 18 раз)
-3. **Оптимизирован поиск** через создание GIN индекса для полнотекстового поиска
-4. **Настроен эффективный пул соединений** с мониторингом состояния
-
-### Ключевые инсайты:
-
-1. **OFFSET пагинация не масштабируется** - при больших смещениях производительность деградирует линейно
-2. **Индексы должны покрывать условия WHERE и ORDER BY** - составные индексы для пагинации
-3. **Connection pool требует тонкой настройки** - зависит от нагрузки и конфигурации БД
-4. **Батчинг решает проблему N+1** даже без сложных JOIN'ов
-
-### Сравнительная таблица производительности:
-
-| Метрика | До оптимизации | После оптимизации | Улучшение |
-|---------|----------------|-------------------|-----------|
-| Время пагинации (p95) | 120.5 мс | 25.4 мс | ×4.7 |
-| Пропускная способность (RPS) | 850 | 1850 | ×2.2 |
-| Время batch-запроса | 150 мс | 8.2 мс | ×18 |
-| Использование CPU БД | 45% | 25% | ×1.8 |
-| Активные соединения | 45 | 12 | ×3.75 |
+![db-stat](./img/db-stat.png)
 
 ---
 
 ## Заключение
 
-В ходе практической работы успешно выполнена миграция с in-memory хранилища на PostgreSQL с внедрением продвинутых техник оптимизации. Основные достижения:
+В ходе практической работы успешно выполнена миграция с in-memory хранилища
+на PostgreSQL с внедрением продвинутых техник оптимизации.
 
-1. **Архитектурная переработка** - переход на слоистую архитектуру с connection pool
-2. **Оптимизация запросов** - внедрение keyset-пагинации, батчинга, подготовленных запросов
-3. **Производительность** - достигнуто улучшение производительности ключевых операций в 3-18 раз
-4. **Мониторинг** - реализована система диагностики и мониторинга состояния БД
-5. **Масштабируемость** - заложена основа для горизонтального масштабирования
+Работа демонстрирует полный цикл оптимизации веб-приложения:
+от выявления узких мест до внедрения production-решений с измерением результатов.
 
-Работа демонстрирует полный цикл оптимизации веб-приложения: от выявления узких мест до внедрения production-решений с измерением результатов.
-
+Ссылка на **swagger**: http://arbond.ru/go/14/docs/index.html.
